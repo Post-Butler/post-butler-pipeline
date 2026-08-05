@@ -392,8 +392,8 @@ canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:2
       <input type="range" id="gx" min="0" max="1080" value="90">
       <div class="slider-row"><label>posição y</label><span class="val" id="v-gy">720</span></div>
       <input type="range" id="gy" min="0" max="1350" value="720">
-      <div class="slider-row"><label>tamanho</label><span class="val" id="v-gsize">520</span></div>
-      <input type="range" id="gsize" min="200" max="900" value="520">
+      <div class="slider-row"><label>tamanho</label><span class="val" id="v-gsize">900</span></div>
+      <input type="range" id="gsize" min="200" max="1080" value="900">
       <div class="slider-row"><label>borda</label><span class="val" id="v-gborder">14</span></div>
       <input type="range" id="gborder" min="0" max="40" value="14">
       <div class="slider-row"><label>limiar remoção do branco</label><span class="val" id="v-wthresh">235</span></div>
@@ -402,8 +402,8 @@ canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:2
       <div class="group-title">SKU</div>
       <div class="slider-row"><label>posição x</label><span class="val" id="v-skux">37</span></div>
       <input type="range" id="skux" min="0" max="1080" value="37">
-      <div class="slider-row"><label>posição y</label><span class="val" id="v-skuy">1261</span></div>
-      <input type="range" id="skuy" min="0" max="1350" value="1261">
+      <div class="slider-row"><label>posição y</label><span class="val" id="v-skuy">70</span></div>
+      <input type="range" id="skuy" min="0" max="1350" value="70">
       <div class="slider-row"><label>opacidade</label><span class="val" id="v-skuop">43</span></div>
       <input type="range" id="skuop" min="5" max="100" value="43">
 
@@ -440,8 +440,8 @@ const LAYOUTS = {
     p2x:461, p2y:104, p2a:7,
     showInspo:true,
     ty:442, tsize:70, tspace:-4, tstroke:0,
-    gx:90, gy:720, gsize:520, gborder:14, wthresh:235,
-    skux:37, skuy:1261, skuop:43,
+    gx:90, gy:400, gsize:900, gborder:14, wthresh:235,
+    skux:37, skuy:70, skuop:43,
     otop:25, obot:60,
   },
   s2: {
@@ -449,8 +449,8 @@ const LAYOUTS = {
     p2x:84, p2y:520, p2a:7,
     showInspo:true,
     ty:442, tsize:70, tspace:-4, tstroke:0,
-    gx:515, gy:54, gsize:520, gborder:14, wthresh:235,
-    skux:796, skuy:1261, skuop:43,
+    gx:90, gy:400, gsize:900, gborder:14, wthresh:235,
+    skux:37, skuy:70, skuop:43,
     otop:25, obot:60,
   },
 };
@@ -1065,6 +1065,147 @@ function render(){
   updateStatus();
   updateDropAwaitingState();
 }
+
+// ---------- arrastar elementos direto no canvas (além dos sliders) ----------
+// Os sliders continuam existindo e funcionando — arrastar só é outro jeito
+// de mudar os mesmos parâmetros (params.gx/gy, p1x/p1y, etc.), sincronizado
+// nos dois sentidos.
+const P1_SIZE = [410,450], P2_SIZE = [410,450];
+
+function measureSpacedTextWidth(text, fontPx, spacing){
+  ctx.font = `italic ${fontPx}px "Times New Roman", Georgia, serif`;
+  const widths = [...text].map(ch => ctx.measureText(ch).width);
+  return widths.reduce((a,b)=>a+b,0) + spacing*Math.max(0, text.length-1);
+}
+
+function getGarmentDrawSize(page){
+  if(!page.garment) return null;
+  const removeWhite = $('removeWhite').checked;
+  let src = page.garment;
+  if(removeWhite && page.garmentCache.canvas && page.garmentCache.srcImg === page.garment){
+    src = page.garmentCache.canvas;
+  }
+  const maxSize = page.params.gsize;
+  const scale = Math.min(maxSize/src.width, maxSize/src.height);
+  return { w: src.width*scale, h: src.height*scale };
+}
+
+// Caixas delimitadoras (aproximadas, sem levar em conta rotação — suficiente
+// pra clicar e arrastar) de cada elemento arrastável, na página ativa.
+function getElementBounds(page){
+  const p = page.params;
+  const bounds = {};
+
+  const skuText = page.sku.trim();
+  if(skuText){
+    ctx.font = '300 34px Poppins';
+    const w = ctx.measureText('sku: ' + skuText).width;
+    bounds.sku = { x:p.skux, y:p.skuy-30, w, h:40 };
+  }
+
+  const gsz = getGarmentDrawSize(page);
+  if(gsz){
+    bounds.garment = { x:p.gx, y:p.gy, w:gsz.w, h:gsz.h };
+  }
+
+  const title = page.title.trim();
+  if(title){
+    const w = measureSpacedTextWidth(title, p.tsize, p.tspace);
+    bounds.title = { x: W/2 - w/2, y: p.ty - p.tsize*0.85, w, h: p.tsize*1.05 };
+  }
+
+  bounds.p1 = { x:p.p1x, y:p.p1y, w:P1_SIZE[0], h:P1_SIZE[1] };
+  bounds.p2 = { x:p.p2x, y:p.p2y, w:P2_SIZE[0], h:P2_SIZE[1] };
+
+  return bounds;
+}
+
+// Ordem de teste = ordem inversa de desenho (o que está por cima é testado
+// primeiro), pra clicar no elemento que você realmente está vendo no topo.
+const HIT_ORDER = ['sku','garment','title','p1','p2'];
+
+const DRAG_PARAM_MAP = {
+  sku:     { x:'skux', y:'skuy' },
+  garment: { x:'gx',   y:'gy'   },
+  title:   { x:null,   y:'ty'   },
+  p1:      { x:'p1x',  y:'p1y'  },
+  p2:      { x:'p2x',  y:'p2y'  },
+};
+
+function hitTest(page, cx, cy){
+  const bounds = getElementBounds(page);
+  for(const key of HIT_ORDER){
+    const b = bounds[key];
+    if(!b) continue;
+    if(cx>=b.x && cx<=b.x+b.w && cy>=b.y && cy<=b.y+b.h){
+      return { key, bounds:b };
+    }
+  }
+  return null;
+}
+
+function clientToCanvasPoint(evt){
+  const rect = canvas.getBoundingClientRect();
+  // guarda contra layout ainda não calculado (rect 0x0) — evita Infinity/NaN
+  const scaleX = rect.width  > 0 ? canvas.width  / rect.width  : 1;
+  const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+  return {
+    x: (evt.clientX - rect.left) * scaleX,
+    y: (evt.clientY - rect.top) * scaleY,
+  };
+}
+
+function applyDragPosition(page, key, x, y){
+  const map = DRAG_PARAM_MAP[key];
+  if(!map) return;
+  ['x','y'].forEach(axis=>{
+    const paramKey = map[axis];
+    if(!paramKey) return;
+    const el = $(paramKey);
+    if(!el) return;
+    const min = Number(el.min), max = Number(el.max);
+    const raw = axis === 'x' ? x : y;
+    const v = Math.round(Math.min(max, Math.max(min, raw)));
+    page.params[paramKey] = v;
+    el.value = v;
+    const label = $('v-'+paramKey);
+    if(label) label.textContent = v;
+  });
+}
+
+let dragState = null; // { key, offsetX, offsetY }
+
+canvas.addEventListener('mousedown', (e)=>{
+  const page = pages[activeIndex];
+  const pt = clientToCanvasPoint(e);
+  const hit = hitTest(page, pt.x, pt.y);
+  if(!hit) return;
+  dragState = { key: hit.key, offsetX: pt.x - hit.bounds.x, offsetY: pt.y - hit.bounds.y };
+  canvas.style.cursor = 'grabbing';
+  e.preventDefault();
+});
+
+canvas.addEventListener('mousemove', (e)=>{
+  if(dragState) return; // enquanto arrasta, o cursor já é 'grabbing'
+  const page = pages[activeIndex];
+  const pt = clientToCanvasPoint(e);
+  const hit = hitTest(page, pt.x, pt.y);
+  canvas.style.cursor = hit ? 'grab' : 'default';
+});
+
+window.addEventListener('mousemove', (e)=>{
+  if(!dragState) return;
+  const page = pages[activeIndex];
+  const pt = clientToCanvasPoint(e);
+  applyDragPosition(page, dragState.key, pt.x - dragState.offsetX, pt.y - dragState.offsetY);
+  render();
+});
+
+window.addEventListener('mouseup', ()=>{
+  if(!dragState) return;
+  dragState = null;
+  canvas.style.cursor = 'default';
+});
 
 function updateStatus(){
   const s = $('status');
