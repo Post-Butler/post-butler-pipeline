@@ -103,6 +103,40 @@ threading.Thread(target=_worker_loop, daemon=True).start()
 
 
 # ---------------------------------------------------------------------
+# Busca de inspiração no Pinterest — bem mais rápida (~10-20s) e sem
+# disputa de GPU/Chrome do garment-reconstructor, então cada busca roda
+# na sua própria thread em vez de entrar na fila do worker acima.
+# ---------------------------------------------------------------------
+inspo_jobs = {}
+inspo_jobs_lock = threading.Lock()
+
+
+def _update_inspo_job(job_id: str, **fields):
+    with inspo_jobs_lock:
+        if job_id in inspo_jobs:
+            inspo_jobs[job_id].update(fields)
+
+
+def _run_inspo_job(job_id: str, query: str, n: int):
+    try:
+        _update_inspo_job(job_id, status="running", stage="Buscando no Pinterest…")
+
+        def on_stage(msg, jid=job_id):
+            _update_inspo_job(jid, stage=msg)
+
+        images_bytes = pipeline.run_pinterest_inspo(query, n=n, on_stage=on_stage)
+        images = [
+            f"data:image/jpeg;base64,{base64.b64encode(b).decode('ascii')}"
+            for b in images_bytes
+        ]
+        _update_inspo_job(job_id, status="done", stage="Concluído.", result={"images": images}, error=None)
+    except pipeline.PipelineError as e:
+        _update_inspo_job(job_id, status="error", error=str(e))
+    except Exception as e:
+        _update_inspo_job(job_id, status="error", error=f"Erro inesperado: {e}")
+
+
+# ---------------------------------------------------------------------
 # Rotas da UI
 # ---------------------------------------------------------------------
 @app.route("/")
@@ -155,6 +189,45 @@ def list_jobs():
         return jsonify(list(jobs.values()))
 
 
+# ---------------------------------------------------------------------
+# API de busca de inspiração (Pinterest)
+# ---------------------------------------------------------------------
+@app.route("/api/inspo-jobs", methods=["POST"])
+def create_inspo_job():
+    data = request.get_json(force=True, silent=True) or {}
+    query = (data.get("query") or "").strip()
+    try:
+        n = int(data.get("n") or 8)
+    except (TypeError, ValueError):
+        n = 8
+
+    if not query:
+        return jsonify({"error": "campo 'query' é obrigatório"}), 400
+
+    job_id = uuid.uuid4().hex[:12]
+    with inspo_jobs_lock:
+        inspo_jobs[job_id] = {
+            "id": job_id,
+            "query": query,
+            "status": "queued",
+            "stage": "Na fila…",
+            "result": None,
+            "error": None,
+            "created_at": time.time(),
+        }
+    threading.Thread(target=_run_inspo_job, args=(job_id, query, n), daemon=True).start()
+    return jsonify(inspo_jobs[job_id]), 201
+
+
+@app.route("/api/inspo-jobs/<job_id>", methods=["GET"])
+def get_inspo_job(job_id):
+    with inspo_jobs_lock:
+        job = inspo_jobs.get(job_id)
+    if job is None:
+        return jsonify({"error": "job não encontrado"}), 404
+    return jsonify(job)
+
+
 if __name__ == "__main__":
     print("[server] Post Studio rodando em http://127.0.0.1:5050")
-    app.run(host="127.0.0.1", port=5050, debug=False)
+    app.run(host="127.0.0.1", port=5050, debug=False, threaded=True)

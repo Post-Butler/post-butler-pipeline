@@ -225,6 +225,22 @@ input[type=range]::-webkit-slider-thumb{
 }
 .progress-label .eta{ color:var(--olive); white-space:nowrap; }
 
+.inspo-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:12px;
+}
+.inspo-item{
+  position:relative; aspect-ratio:1/1; border-radius:3px; overflow:hidden;
+  border:2px solid transparent; cursor:pointer; transition:border-color .15s ease, transform .1s ease;
+}
+.inspo-item:hover{ transform:translateY(-1px); }
+.inspo-item img{ width:100%; height:100%; object-fit:cover; display:block; }
+.inspo-item.picked{ border-color:var(--olive); box-shadow:0 0 0 1px var(--olive); }
+.inspo-item .badge{
+  position:absolute; top:3px; right:3px; width:17px; height:17px; border-radius:50%;
+  background:var(--olive-deep); color:var(--cream); font-size:9.5px; font-weight:600;
+  display:flex; align-items:center; justify-content:center;
+}
+
 /* stage */
 .stage{
   flex:1; display:flex; align-items:center; justify-content:center; padding:60px 40px;
@@ -287,12 +303,23 @@ canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:2
 
     <div class="section">
       <div class="section-label">Inspirações (desta página)</div>
-      <div class="upload-grid">
+
+      <div class="field">
+        <label>Buscar no Pinterest</label>
+        <input type="text" id="inspoQueryText" placeholder="ex: vestido animal print verão">
+      </div>
+      <button class="btn btn-secondary" id="fetchInspoBtn" type="button" style="margin-top:2px;">buscar 8 inspos</button>
+      <div class="status" id="inspoJobStatus"></div>
+
+      <div class="inspo-grid" id="inspoResultsGrid" style="display:none;"></div>
+      <div class="tray-hint" id="inspoPickHint" style="display:none;">clique em 2 fotos pra usar como inspo 1 e inspo 2</div>
+
+      <div class="upload-grid" style="margin-top:14px;">
         <div class="drop" id="drop-insp1" data-slot="insp1">
-          <span class="plus">+</span><span class="hint">inspo 1</span>
+          <span class="plus">+</span><span class="hint">ou envie inspo 1 manualmente</span>
         </div>
         <div class="drop" id="drop-insp2" data-slot="insp2">
-          <span class="plus">+</span><span class="hint">inspo 2</span>
+          <span class="plus">+</span><span class="hint">ou envie inspo 2 manualmente</span>
         </div>
       </div>
     </div>
@@ -477,6 +504,9 @@ function newPage(layoutKey){
     // busca automática via Shein (pipeline)
     sheinUrl:'', peca:'',
     jobId:null, jobStatus:null, jobStage:'', jobError:null, jobProgress:null,
+    // busca automática de inspo (pinterest-inspo)
+    inspoQuery:'', inspoResults:[], inspoPickedIdx:[],
+    inspoJobId:null, inspoJobStatus:null, inspoJobStage:'', inspoJobError:null,
   };
 }
 
@@ -504,6 +534,9 @@ function setActive(i){
   $('sheinUrlText').value = page.sheinUrl;
   $('pecaSelect').value = page.peca;
   updatePieceJobUI(page);
+  $('inspoQueryText').value = page.inspoQuery;
+  updateInspoJobUI(page);
+  renderInspoGrid(page);
 
   PARAM_KEYS.forEach(key=>{
     if(key === 'showInspo'){
@@ -517,8 +550,8 @@ function setActive(i){
     if(v) v.textContent = page.params[key];
   });
 
-  refreshSlot('drop-insp1', page.insp1, 'inspo 1');
-  refreshSlot('drop-insp2', page.insp2, 'inspo 2');
+  refreshSlot('drop-insp1', page.insp1, 'ou envie inspo 1 manualmente');
+  refreshSlot('drop-insp2', page.insp2, 'ou envie inspo 2 manualmente');
   refreshSlot('drop-garment', page.garment, 'ou envie a foto da peça manualmente');
 
   document.querySelectorAll('.page-chip').forEach((el,idx)=> el.classList.toggle('active', idx===i));
@@ -847,7 +880,155 @@ async function pollJobs(){
     }
   }
 }
+
+// ---------- busca de inspiração via pinterest-inspo (texto -> 8 fotos) ----------
+function updateInspoJobUI(page){
+  const el = $('inspoJobStatus');
+  const btn = $('fetchInspoBtn');
+  el.classList.remove('ok','hint','err');
+
+  if(!page.inspoJobStatus){
+    el.textContent = '';
+    btn.disabled = false;
+    btn.textContent = 'buscar 8 inspos';
+  } else if(page.inspoJobStatus === 'queued'){
+    el.textContent = 'na fila…';
+    el.classList.add('hint');
+    btn.disabled = true;
+    btn.textContent = 'na fila…';
+  } else if(page.inspoJobStatus === 'running'){
+    el.textContent = page.inspoJobStage || 'buscando…';
+    el.classList.add('hint');
+    btn.disabled = true;
+    btn.textContent = 'buscando…';
+  } else if(page.inspoJobStatus === 'done'){
+    el.textContent = `pronto ✓ ${page.inspoResults.length} fotos — clique em 2 pra usar`;
+    el.classList.add('ok');
+    btn.disabled = false;
+    btn.textContent = 'buscar de novo';
+  } else if(page.inspoJobStatus === 'error'){
+    el.textContent = 'erro: ' + (page.inspoJobError || 'desconhecido');
+    el.classList.add('err');
+    btn.disabled = false;
+    btn.textContent = 'tentar de novo';
+  }
+}
+
+function renderInspoGrid(page){
+  const grid = $('inspoResultsGrid');
+  const hint = $('inspoPickHint');
+
+  if(!page.inspoResults || page.inspoResults.length === 0){
+    grid.style.display = 'none';
+    hint.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+
+  grid.style.display = 'grid';
+  hint.style.display = 'block';
+  grid.innerHTML = '';
+  page.inspoResults.forEach((src, i)=>{
+    const pos = page.inspoPickedIdx.indexOf(i);
+    const el = document.createElement('div');
+    el.className = 'inspo-item' + (pos !== -1 ? ' picked' : '');
+    el.innerHTML = `<img src="${src}">` + (pos !== -1 ? `<div class="badge">${pos+1}</div>` : '');
+    el.addEventListener('click', ()=> onInspoThumbClick(i));
+    grid.appendChild(el);
+  });
+}
+
+// Clicar numa das 8 fotos escolhe ela como inspo 1 (primeiro clique) ou
+// inspo 2 (segundo clique). Clicar numa foto já escolhida desmarca ela.
+// Um 3º clique substitui a escolha mais antiga (troca a inspo 1).
+async function onInspoThumbClick(idx){
+  const page = pages[activeIndex];
+  const pos = page.inspoPickedIdx.indexOf(idx);
+
+  if(pos !== -1){
+    page.inspoPickedIdx.splice(pos, 1);
+  } else {
+    if(page.inspoPickedIdx.length >= 2) page.inspoPickedIdx.shift();
+    page.inspoPickedIdx.push(idx);
+  }
+
+  const [idx0, idx1] = page.inspoPickedIdx;
+  page.insp1 = (idx0 != null) ? await loadImageFromDataUrl(page.inspoResults[idx0]) : null;
+  page.insp2 = (idx1 != null) ? await loadImageFromDataUrl(page.inspoResults[idx1]) : null;
+
+  renderInspoGrid(page);
+  refreshSlot('drop-insp1', page.insp1, 'ou envie inspo 1 manualmente');
+  refreshSlot('drop-insp2', page.insp2, 'ou envie inspo 2 manualmente');
+  render();
+}
+
+$('fetchInspoBtn').addEventListener('click', async ()=>{
+  const page = pages[activeIndex];
+  const query = $('inspoQueryText').value.trim();
+
+  if(!query){
+    const s = $('inspoJobStatus');
+    s.textContent = 'escreva o que você quer pesquisar primeiro';
+    s.classList.add('err');
+    return;
+  }
+
+  page.inspoQuery = query;
+  page.inspoJobStatus = 'queued';
+  page.inspoJobStage = 'na fila…';
+  page.inspoJobError = null;
+  updateInspoJobUI(page);
+
+  try{
+    const res = await fetch('/api/inspo-jobs', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({query, n:8}),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'falha ao criar busca');
+    page.inspoJobId = data.id;
+  } catch(err){
+    page.inspoJobStatus = 'error';
+    page.inspoJobError = err.message || String(err);
+    updateInspoJobUI(page);
+  }
+});
+
+async function pollInspoJobs(){
+  for(let i=0;i<pages.length;i++){
+    const page = pages[i];
+    if(!page.inspoJobId) continue;
+    if(page.inspoJobStatus !== 'queued' && page.inspoJobStatus !== 'running') continue;
+
+    try{
+      const res = await fetch(`/api/inspo-jobs/${page.inspoJobId}`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || 'job não encontrado');
+
+      page.inspoJobStatus = data.status;
+      page.inspoJobStage = data.stage;
+
+      if(data.status === 'done' && data.result){
+        page.inspoResults = data.result.images;
+        page.inspoPickedIdx = [];
+      } else if(data.status === 'error'){
+        page.inspoJobError = data.error;
+      }
+    } catch(err){
+      page.inspoJobStatus = 'error';
+      page.inspoJobError = err.message || String(err);
+    }
+
+    if(i === activeIndex){
+      updateInspoJobUI(page);
+      renderInspoGrid(page);
+    }
+  }
+}
+
 setInterval(pollJobs, 3000);
+setInterval(pollInspoJobs, 3000);
 
 // ---------- desenho ----------
 function coverFit(ctx, img, x, y, w, h){

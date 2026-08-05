@@ -4,3 +4,6 @@
 [submodule "sehin-scrapper"]
 	path = sehin-scrapper
 	url = https://github.com/Post-Butler/shein-scrapper.git
+[submodule "pinterest-inspo"]
+	path = pinterest-inspo
+	url = https://github.com/Post-Butler/pinterest-inspo.git

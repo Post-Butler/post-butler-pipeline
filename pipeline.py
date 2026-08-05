@@ -28,6 +28,7 @@ Uso como biblioteca (ex: server.py):
 Requisitos (nada disso é instalado por este script):
     - venv de sehin-scrapper já configurado (playwright/seleniumbase etc.)
     - venv de garment-reconstructor já configurado (torch/transformers etc.)
+    - venv de pinterest-inspo já configurado (requests/pillow/playwright)
     - `mflux` instalado globalmente (uv tool install --upgrade mflux) e
       `~/.local/bin` acessível (este script já garante isso no PATH do
       subprocesso, mesmo que o shell atual não tenha).
@@ -40,16 +41,19 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 ROOT = Path(__file__).parent.resolve()
 SCRAPER_DIR = ROOT / "sehin-scrapper"
 GARMENT_DIR = ROOT / "garment-reconstructor"
+PINTEREST_DIR = ROOT / "pinterest-inspo"
 FINAL_OUTPUT_DIR = ROOT / "output"
 
 SCRAPER_PYTHON = SCRAPER_DIR / "venv" / "bin" / "python3.12"
 GARMENT_PYTHON = GARMENT_DIR / "venv" / "bin" / "python3.13"
+PINTEREST_PYTHON = PINTEREST_DIR / "venv" / "bin" / "python3"
 
 StageCallback = Callable[[str], None]
 # (step_atual, total_steps, segundos_restantes_estimados | None)
@@ -152,6 +156,40 @@ def run_scraper(url: str, on_stage: StageCallback = _noop) -> dict:
 
     on_stage(f"Produto encontrado: {data.get('name') or data['product_id']}")
     return data
+
+
+def run_pinterest_inspo(query: str, n: int = 8, on_stage: StageCallback = _noop) -> List[bytes]:
+    """Busca `n` fotos de inspiração no Pinterest a partir de uma descrição em
+    texto (ex: "vestido animal print") e devolve o conteúdo (bytes) de cada
+    imagem já baixada — pronto pra virar data URL/base64 do lado do server.
+
+    Levanta PipelineError se a busca falhar ou não achar nada.
+    """
+    if not PINTEREST_PYTHON.exists():
+        raise PipelineError(f"venv do pinterest-inspo não encontrado em {PINTEREST_PYTHON}")
+
+    on_stage(f'Buscando "{query}" no Pinterest…')
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="inspo_"))
+    try:
+        cmd = [
+            str(PINTEREST_PYTHON), "pinterest_inspo.py", query,
+            "--n", str(n),
+            "--output-dir", str(tmp_dir),
+        ]
+        result = subprocess.run(cmd, cwd=str(PINTEREST_DIR), capture_output=True, text=True)
+        if result.returncode != 0:
+            err_tail = (result.stderr or result.stdout or "").strip()[-400:]
+            raise PipelineError(f"pinterest_inspo.py terminou com código {result.returncode}: {err_tail}")
+
+        files = sorted(tmp_dir.glob("inspo_*.jpg"))
+        if not files:
+            raise PipelineError("nenhuma imagem de inspiração encontrada pra essa busca.")
+
+        on_stage(f"{len(files)} imagem(ns) encontradas.")
+        return [f.read_bytes() for f in files]
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def run_garment_reconstructor(
