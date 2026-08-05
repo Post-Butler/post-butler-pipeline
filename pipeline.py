@@ -36,6 +36,7 @@ Requisitos (nada disso é instalado por este script):
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -51,6 +52,8 @@ SCRAPER_PYTHON = SCRAPER_DIR / "venv" / "bin" / "python3.12"
 GARMENT_PYTHON = GARMENT_DIR / "venv" / "bin" / "python3.13"
 
 StageCallback = Callable[[str], None]
+# (step_atual, total_steps, segundos_restantes_estimados | None)
+ProgressCallback = Callable[[int, int, Optional[int]], None]
 
 
 class PipelineError(Exception):
@@ -59,6 +62,55 @@ class PipelineError(Exception):
 
 def _noop(_msg: str) -> None:
     return None
+
+
+def _noop_progress(_current: int, _total: int, _eta_seconds: Optional[int]) -> None:
+    return None
+
+
+# Linha de progresso do tqdm usada pelo mflux, ex:
+#  "12%|██████████▋                  | 1/8 [03:15<22:45, 195.10s/it]"
+_TQDM_RE = re.compile(
+    r"(\d+)%\|[^|]*\|\s*(\d+)/(\d+)\s*\[([\d:]+)<([\d:]+)"
+)
+
+
+def _parse_hms(text: str) -> Optional[int]:
+    """'22:45' ou '1:02:45' -> segundos. None se não for um tempo válido."""
+    try:
+        parts = [int(p) for p in text.strip().split(":")]
+    except ValueError:
+        return None
+    seconds = 0
+    for p in parts:
+        seconds = seconds * 60 + p
+    return seconds
+
+
+def _stream_subprocess(cmd, cwd: str, env: dict, on_line: Callable[[str], None]) -> int:
+    """Roda um subprocesso e entrega cada linha (inclusive as atualizadas via
+    \\r, como as barras de progresso do tqdm) pra on_line, em tempo real.
+    Devolve o código de saída.
+    """
+    proc = subprocess.Popen(
+        cmd, cwd=cwd, env=env,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    )
+    assert proc.stdout is not None
+    buf = ""
+    while True:
+        ch = proc.stdout.read(1)
+        if ch == "":
+            break
+        if ch in ("\r", "\n"):
+            if buf:
+                on_line(buf)
+            buf = ""
+        else:
+            buf += ch
+    if buf:
+        on_line(buf)
+    return proc.wait()
 
 
 def run_scraper(url: str, on_stage: StageCallback = _noop) -> dict:
@@ -110,12 +162,20 @@ def run_garment_reconstructor(
     quantize: int,
     low_ram: bool,
     on_stage: StageCallback = _noop,
+    on_progress: ProgressCallback = _noop_progress,
 ) -> Path:
-    """Roda reconstruct.py sobre a imagem baixada e devolve o path do PNG final."""
+    """Roda reconstruct.py sobre a imagem baixada e devolve o path do PNG final.
+
+    reconstruct.py chama o `mflux` (que usa tqdm) sem capturar a saída dele,
+    então o stdout do mflux passa direto pelo descritor de arquivo herdado —
+    capturando o stdout do processo reconstruct.py aqui a gente já recebe as
+    linhas de progresso do tqdm em tempo real, sem precisar mexer no
+    garment-reconstructor.
+    """
     if not GARMENT_PYTHON.exists():
         raise PipelineError(f"venv do garment-reconstructor não encontrado em {GARMENT_PYTHON}")
 
-    on_stage("Segmentando a peça e gerando a foto de produto (pode levar alguns minutos)…")
+    on_stage("Segmentando a peça…")
     print(f"\n[pipeline] === Etapa 2/2: tratamento da foto (garment-reconstructor) ===")
     print(f"[pipeline] Imagem de entrada: {image_path}")
 
@@ -132,14 +192,31 @@ def run_garment_reconstructor(
 
     # Garante que o `mflux` (instalado via `uv tool install`, normalmente em
     # ~/.local/bin) seja encontrado mesmo que o shell atual não tenha esse
-    # diretório no PATH.
+    # diretório no PATH. PYTHONUNBUFFERED evita que prints do reconstruct.py
+    # fiquem presos em buffer quando o stdout não é um terminal.
     env = os.environ.copy()
     local_bin = str(Path.home() / ".local" / "bin")
     env["PATH"] = local_bin + os.pathsep + env.get("PATH", "")
+    env["PYTHONUNBUFFERED"] = "1"
 
-    result = subprocess.run(cmd, cwd=str(GARMENT_DIR), env=env)
-    if result.returncode != 0:
-        raise PipelineError(f"reconstruct.py terminou com código {result.returncode}")
+    started_mflux = False
+
+    def handle_line(line: str):
+        nonlocal started_mflux
+        print(line)  # mantém o log completo no console/terminal, igual antes
+
+        m = _TQDM_RE.search(line)
+        if m:
+            if not started_mflux:
+                started_mflux = True
+                on_stage("Gerando a foto de produto com o FLUX.2 (mflux)…")
+            current, total = int(m.group(2)), int(m.group(3))
+            eta_seconds = _parse_hms(m.group(5))
+            on_progress(current, total, eta_seconds)
+
+    returncode = _stream_subprocess(cmd, str(GARMENT_DIR), env, handle_line)
+    if returncode != 0:
+        raise PipelineError(f"reconstruct.py terminou com código {returncode}")
 
     out_path = GARMENT_DIR / "output" / f"{image_path.stem}_produto.png"
     if not out_path.exists():
@@ -156,9 +233,13 @@ def process(
     quantize: int = 8,
     low_ram: bool = False,
     on_stage: StageCallback = _noop,
+    on_progress: ProgressCallback = _noop_progress,
 ) -> dict:
     """Roda o pipeline completo (link -> id + sku + foto tratada) e devolve
     um dict com o resultado. É isso que server.py chama por trás da fila.
+
+    on_progress é chamado só durante a etapa de geração da imagem (mflux),
+    com (step_atual, total_steps, segundos_restantes_estimados).
 
     Levanta PipelineError em caso de falha esperada (venv faltando, scraper
     bloqueado, etc.) — quem chamar decide como reportar isso (job de fila,
@@ -176,7 +257,8 @@ def process(
 
     # --- Etapa 2: foto -> foto tratada ---
     treated_image = run_garment_reconstructor(
-        staged_image, peca, steps, seed, quantize, low_ram, on_stage=on_stage
+        staged_image, peca, steps, seed, quantize, low_ram,
+        on_stage=on_stage, on_progress=on_progress,
     )
 
     # --- Saída final: output/<product_id>/ nesta pasta ---

@@ -210,6 +210,21 @@ input[type=range]::-webkit-slider-thumb{
 .status.hint{ color:var(--olive); }
 .status.err{ color:#d16a52; }
 
+.progress-wrap{ margin-top:10px; }
+.progress-bar{
+  width:100%; height:6px; background:#161310; border:1px solid var(--panel-border);
+  border-radius:4px; overflow:hidden;
+}
+.progress-fill{
+  height:100%; width:0%; background:var(--olive);
+  transition:width .4s ease;
+}
+.progress-label{
+  font-size:10.5px; color:var(--cream-dim); margin-top:6px; letter-spacing:.3px;
+  display:flex; justify-content:space-between; gap:8px;
+}
+.progress-label .eta{ color:var(--olive); white-space:nowrap; }
+
 /* stage */
 .stage{
   flex:1; display:flex; align-items:center; justify-content:center; padding:60px 40px;
@@ -307,6 +322,13 @@ canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:2
       </div>
       <button class="btn btn-secondary" id="fetchPieceBtn" type="button" style="margin-top:2px;">buscar peça na shein</button>
       <div class="status" id="pieceJobStatus"></div>
+      <div class="progress-wrap" id="pieceProgressWrap" style="display:none;">
+        <div class="progress-bar"><div class="progress-fill" id="pieceProgressFill"></div></div>
+        <div class="progress-label">
+          <span id="pieceProgressStep"></span>
+          <span class="eta" id="pieceProgressEta"></span>
+        </div>
+      </div>
 
       <div class="upload-grid single" style="margin-top:14px;">
         <div class="drop" id="drop-garment" data-slot="garment">
@@ -454,7 +476,7 @@ function newPage(layoutKey){
     garmentCache: {threshold:null, canvas:null, srcImg:null},
     // busca automática via Shein (pipeline)
     sheinUrl:'', peca:'',
-    jobId:null, jobStatus:null, jobStage:'', jobError:null,
+    jobId:null, jobStatus:null, jobStage:'', jobError:null, jobProgress:null,
   };
 }
 
@@ -692,10 +714,19 @@ $('sheinUrlText').addEventListener('input', ()=>{ pages[activeIndex].sheinUrl = 
 $('pecaSelect').addEventListener('change', ()=>{ pages[activeIndex].peca = $('pecaSelect').value; });
 
 // ---------- busca automática da peça via pipeline (link Shein -> foto + sku) ----------
+function formatEta(seconds){
+  if(seconds == null || isNaN(seconds)) return '';
+  if(seconds < 60) return `~${Math.max(1, Math.round(seconds))}s restantes`;
+  const min = Math.round(seconds/60);
+  return `~${min} min restante${min===1?'':'s'}`;
+}
+
 function updatePieceJobUI(page){
   const el = $('pieceJobStatus');
   const btn = $('fetchPieceBtn');
+  const progWrap = $('pieceProgressWrap');
   el.classList.remove('ok','hint','err');
+
   if(!page.jobStatus){
     el.textContent = '';
     btn.disabled = false;
@@ -720,6 +751,18 @@ function updatePieceJobUI(page){
     el.classList.add('err');
     btn.disabled = false;
     btn.textContent = 'tentar de novo';
+  }
+
+  // barra de progresso — só aparece durante a geração da imagem (mflux),
+  // que é a etapa que tem step/total conhecidos.
+  const p = page.jobProgress;
+  if(page.jobStatus === 'running' && p && p.total_steps){
+    progWrap.style.display = 'block';
+    $('pieceProgressFill').style.width = (p.percent || 0) + '%';
+    $('pieceProgressStep').textContent = `gerando imagem — passo ${p.current_step}/${p.total_steps}`;
+    $('pieceProgressEta').textContent = formatEta(p.eta_seconds);
+  } else {
+    progWrap.style.display = 'none';
   }
 }
 
@@ -749,6 +792,7 @@ $('fetchPieceBtn').addEventListener('click', async ()=>{
   page.jobStatus = 'queued';
   page.jobStage = 'na fila…';
   page.jobError = null;
+  page.jobProgress = null;
   updatePieceJobUI(page);
 
   try{
@@ -780,6 +824,7 @@ async function pollJobs(){
 
       page.jobStatus = data.status;
       page.jobStage = data.stage;
+      page.jobProgress = data.progress || null;
 
       if(data.status === 'done' && data.result){
         const img = await loadImageFromDataUrl(data.result.image_data_url);

@@ -60,10 +60,20 @@ def _worker_loop():
             if job is None:
                 continue
 
-            _update_job(job_id, status="running", stage="Iniciando…")
+            _update_job(job_id, status="running", stage="Iniciando…", progress=None)
 
             def on_stage(msg, jid=job_id):
-                _update_job(jid, stage=msg)
+                # troca de etapa (scraping, segmentação, geração...) zera o
+                # progresso numérico anterior, se houver.
+                _update_job(jid, stage=msg, progress=None)
+
+            def on_progress(current, total, eta_seconds, jid=job_id):
+                _update_job(jid, progress={
+                    "current_step": current,
+                    "total_steps": total,
+                    "percent": round(current / total * 100) if total else None,
+                    "eta_seconds": eta_seconds,
+                })
 
             result = pipeline.process(
                 job["url"],
@@ -73,6 +83,7 @@ def _worker_loop():
                 quantize=job.get("quantize", 8),
                 low_ram=job.get("low_ram", False),
                 on_stage=on_stage,
+                on_progress=on_progress,
             )
 
             image_bytes = Path(result["final_image"]).read_bytes()
@@ -119,6 +130,7 @@ def create_job():
             "peca": peca,
             "status": "queued",
             "stage": "Na fila…",
+            "progress": None,
             "result": None,
             "error": None,
             "created_at": time.time(),
