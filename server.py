@@ -68,7 +68,7 @@ def _worker_loop():
             result = pipeline.process(
                 job["url"],
                 peca=job["peca"],
-                steps=job.get("steps", 8),
+                steps=job.get("steps", 6),
                 seed=job.get("seed", 123),
                 quantize=job.get("quantize", 8),
                 low_ram=job.get("low_ram", False),

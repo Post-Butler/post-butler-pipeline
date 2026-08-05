@@ -18,7 +18,7 @@ misturam). Nada é reescrito dentro de sehin-scrapper/ ou garment-reconstructor/
 além do que esses projetos já fazem sozinhos.
 
 Uso via CLI:
-    python3 pipeline.py "<link-do-produto-shein>" [--peca short] [--steps 8]
+    python3 pipeline.py "<link-do-produto-shein>" [--peca short] [--steps 6]
         [--seed 123] [--quantize 8] [--low-ram]
 
 Uso como biblioteca (ex: server.py):
@@ -151,7 +151,7 @@ def run_garment_reconstructor(
 def process(
     url: str,
     peca: Optional[str] = None,
-    steps: int = 8,
+    steps: int = 6,
     seed: int = 123,
     quantize: int = 8,
     low_ram: bool = False,
@@ -204,7 +204,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("url", help="Link do produto na Shein")
     parser.add_argument("--peca", default=None, help="vestido, blusa, saia, calca, short, cinto, sapato, bolsa, lenco, chapeu (padrão: auto)")
-    parser.add_argument("--steps", type=int, default=8)
+    parser.add_argument("--steps", type=int, default=6)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--quantize", type=int, default=8, choices=[3, 4, 5, 6, 8])
     parser.add_argument("--low-ram", action="store_true")
