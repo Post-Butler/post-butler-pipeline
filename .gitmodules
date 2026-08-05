@@ -1,0 +1,6 @@
+[submodule "garment-reconstructor"]
+	path = garment-reconstructor
+	url = https://github.com/Post-Butler/wardrobe-reconstructor.git
+[submodule "sehin-scrapper"]
+	path = sehin-scrapper
+	url = https://github.com/Post-Butler/shein-scrapper.git

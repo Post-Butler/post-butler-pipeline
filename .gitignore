@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+*.pyc
+# resultados gerados pelo pipeline (o run.json + a foto ficam em output/<id>/,
+# mas não versionamos os artefatos binários por padrão)
+output/
