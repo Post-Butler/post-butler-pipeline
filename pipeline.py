@@ -158,7 +158,7 @@ def run_scraper(url: str, on_stage: StageCallback = _noop) -> dict:
     return data
 
 
-def run_pinterest_inspo(query: str, n: int = 8, on_stage: StageCallback = _noop) -> List[bytes]:
+def run_pinterest_inspo(query: str, n: int = 16, on_stage: StageCallback = _noop) -> List[bytes]:
     """Busca `n` fotos de inspiração no Pinterest a partir de uma descrição em
     texto (ex: "vestido animal print") e devolve o conteúdo (bytes) de cada
     imagem já baixada — pronto pra virar data URL/base64 do lado do server.
