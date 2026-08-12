@@ -5,258 +5,331 @@
 <title>Post Studio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 :root{
-  --charcoal:#151311;
-  --panel:#1f1c19;
-  --panel-border:#332e29;
-  --olive:#8a8a5e;
-  --olive-deep:#6c6c4a;
-  --cream:#fdfbf5;
-  --cream-dim:#c9c6ba;
-  --clay:#a8785a;
-  --ok:#7f9b6f;
+  --bg:#0c0a09;
+  --panel:#141110;
+  --card:#1c1711;
+  --card-hover:#241d15;
+  --border:#302a21;
+  --border-soft:rgba(246,241,231,.07);
+  --cream:#f6f1e6;
+  --cream-dim:#a89e8d;
+  --cream-faint:#645b4c;
+  --accent:#ff5a3c;
+  --accent-2:#ffb199;
+  --accent-soft:rgba(255,90,60,.13);
+  --accent-ring:rgba(255,90,60,.38);
+  --ink:#241005;
+  --clay:#c98a5e;
+  --ok:#8ed19a;
+  --err:#ff7a6b;
 }
 
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
 body{
   background:
-    radial-gradient(ellipse at 20% -10%, rgba(138,138,94,0.10), transparent 55%),
-    radial-gradient(ellipse at 100% 100%, rgba(168,120,90,0.08), transparent 50%),
-    var(--charcoal);
+    radial-gradient(ellipse 900px 500px at 15% -8%, rgba(255,90,60,.08), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 105% 15%, rgba(255,90,60,.05), transparent 55%),
+    var(--bg);
   color:var(--cream);
   font-family:'Poppins',sans-serif;
   font-weight:300;
   min-height:100vh;
+  -webkit-font-smoothing:antialiased;
 }
+::selection{ background:var(--accent-soft); color:var(--cream); }
+::-webkit-scrollbar{ width:10px; }
+::-webkit-scrollbar-thumb{ background:var(--border); border-radius:6px; border:2px solid var(--panel); }
+::-webkit-scrollbar-track{ background:transparent; }
 
 .app{ display:flex; min-height:100vh; }
 
 .panel{
-  width:380px;
+  width:430px;
   flex-shrink:0;
   background:var(--panel);
-  border-right:1px solid var(--panel-border);
-  padding:28px 26px 40px;
+  border-right:1px solid var(--border-soft);
+  padding:30px 26px 130px;
   overflow-y:auto;
   max-height:100vh;
+  position:relative;
 }
 
-.brand{ margin-bottom:24px; }
-.brand .eyebrow{
-  font-size:10.5px; letter-spacing:3px; text-transform:uppercase;
-  color:var(--olive); font-weight:500;
+/* ---------- brand ---------- */
+.brand{ display:flex; align-items:center; gap:12px; margin-bottom:30px; }
+.brand-mark{
+  width:36px; height:36px; border-radius:10px; flex-shrink:0;
+  background:linear-gradient(155deg, var(--accent), #b8351c);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 16px -4px rgba(255,90,60,.55);
 }
-.brand h1{
-  font-family:'Times New Roman', Georgia, serif;
-  font-style:italic; font-weight:400; font-size:30px;
-  margin:4px 0 0; color:var(--cream);
+.brand-mark svg{ width:18px; height:18px; }
+.brand-eyebrow{ font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--cream-faint); font-weight:500; }
+.brand-name{
+  font-family:'Times New Roman', Georgia, serif; font-style:italic; font-weight:400;
+  font-size:24px; line-height:1.1; color:var(--cream); margin-top:1px;
 }
 
-.section{ margin-bottom:24px; }
-.section-label{
-  font-size:11px; letter-spacing:2px; text-transform:uppercase;
-  color:var(--cream-dim); margin-bottom:12px;
-  display:flex; align-items:center; gap:8px;
+/* ---------- steps ---------- */
+.step{ margin-bottom:34px; }
+.step-head{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.step-badge{
+  width:26px; height:26px; border-radius:50%; flex-shrink:0;
+  background:var(--accent); color:var(--ink); font-weight:600; font-size:12.5px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 0 4px var(--accent-soft);
 }
-.section-label::after{ content:''; flex:1; height:1px; background:var(--panel-border); }
+.step-title{ font-size:15px; font-weight:500; color:var(--cream); letter-spacing:.2px; }
+.step-hint{ font-size:11.5px; color:var(--cream-faint); margin-top:1px; }
+.step-line{ flex:1; height:1px; background:var(--border); margin-left:4px; }
 
-/* ---------- biblioteca / tray ---------- */
-.add-photos-btn{
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  width:100%; padding:14px; border:1px dashed var(--olive); border-radius:3px;
-  background:rgba(138,138,94,0.08); color:var(--olive);
-  font-family:'Poppins',sans-serif; font-size:12.5px; letter-spacing:.8px; text-transform:uppercase;
+/* ---------- fundo dropzone (hero) ---------- */
+.bg-drop{
+  position:relative; aspect-ratio:16/8.5; border-radius:12px; overflow:hidden;
+  border:1.5px dashed var(--border); background:var(--card);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  cursor:pointer; transition:border-color .18s ease, background .18s ease;
+}
+.bg-drop:hover{ border-color:var(--accent); background:var(--card-hover); }
+.bg-drop.filled{ border-style:solid; border-color:var(--border); }
+.bg-drop.awaiting{ border-color:var(--accent); background:var(--accent-soft); }
+.bg-drop img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.bg-drop .bg-icon{ width:26px; height:26px; color:var(--cream-faint); }
+.bg-drop .hint{ font-size:11.5px; letter-spacing:.3px; color:var(--cream-dim); text-align:center; padding:0 20px; }
+.bg-drop .tag{
+  position:absolute; bottom:10px; left:10px; right:10px; text-align:center;
+  font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--cream);
+  background:rgba(12,10,9,.6); backdrop-filter:blur(3px); padding:6px 8px; border-radius:6px;
+  opacity:0; transition:opacity .15s ease;
+}
+.bg-drop:hover .tag{ opacity:1; }
+
+/* ---------- piece cards ---------- */
+.piece-list{ display:flex; flex-direction:column; gap:10px; }
+.piece-card{
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:12px; transition:border-color .15s ease, box-shadow .15s ease;
+}
+.piece-card.active{ border-color:var(--accent-ring); box-shadow:0 0 0 3px var(--accent-soft); }
+
+.piece-card-top{ display:flex; align-items:flex-start; gap:10px; }
+.piece-thumb{
+  width:52px; height:65px; border-radius:7px; flex-shrink:0; overflow:hidden;
+  background:#100d0a; border:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.piece-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.thumb-empty{ color:var(--cream-faint); font-size:16px; font-weight:300; }
+.thumb-spinner{
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid var(--border); border-top-color:var(--accent);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+.piece-main{ flex:1; min-width:0; }
+.piece-url-row{ display:flex; gap:6px; }
+.piece-url{
+  flex:1; min-width:0; background:#100d0a; border:1px solid var(--border); color:var(--cream);
+  font-family:'Poppins',sans-serif; font-weight:300; font-size:12.5px;
+  padding:9px 10px; border-radius:7px; outline:none; transition:border-color .15s ease;
+}
+.piece-url:focus{ border-color:var(--accent); }
+.piece-url::placeholder{ color:var(--cream-faint); }
+.piece-go{
+  width:34px; flex-shrink:0; border:none; border-radius:7px; background:var(--accent); color:var(--ink);
+  font-size:15px; cursor:pointer; transition:filter .15s ease, transform .1s ease;
+}
+.piece-go:hover{ filter:brightness(1.08); }
+.piece-go:active{ transform:scale(.94); }
+.piece-go:disabled{ background:var(--border); color:var(--cream-faint); cursor:not-allowed; }
+
+.piece-status{
+  font-size:10.5px; color:var(--cream-faint); margin-top:6px; letter-spacing:.2px;
+  cursor:pointer; line-height:1.4;
+}
+.piece-status.ok{ color:var(--ok); }
+.piece-status.err{ color:var(--err); }
+.piece-status.hint{ color:var(--accent-2); }
+
+.piece-del{
+  width:22px; height:22px; flex-shrink:0; border:none; border-radius:50%; background:transparent;
+  color:var(--cream-faint); font-size:11px; cursor:pointer; transition:all .15s ease;
+}
+.piece-del:hover{ background:rgba(255,122,107,.15); color:var(--err); }
+
+.piece-progress{ margin-top:7px; }
+.piece-progress-bar{ height:4px; border-radius:3px; background:var(--border); overflow:hidden; }
+.piece-progress-fill{ height:100%; background:var(--accent); transition:width .4s ease; }
+
+.layout-row{ display:flex; gap:8px; margin-top:11px; }
+.layout-btn{
+  flex:1; padding:5px; border-radius:8px; border:1.5px solid var(--border); background:#100d0a;
+  cursor:pointer; transition:all .15s ease; display:flex; flex-direction:column; align-items:center; gap:5px;
+}
+.layout-btn:hover{ border-color:var(--cream-faint); }
+.layout-btn.active{ border-color:var(--accent); background:var(--accent-soft); }
+.layout-btn span{ font-size:9.5px; letter-spacing:1px; color:var(--cream-dim); }
+.layout-btn.active span{ color:var(--accent-2); }
+
+.layout-swatch{ position:relative; width:100%; aspect-ratio:1080/1350; background:#191510; border-radius:4px; overflow:hidden; }
+.sw-g{ position:absolute; background:rgba(246,241,230,.16); border:1px solid rgba(246,241,230,.28); border-radius:2px; }
+.sw-p{ position:absolute; background:#f6f1e6; border-radius:1.5px; box-shadow:0 1px 3px rgba(0,0,0,.5); }
+
+.piece-adv-toggle{
+  width:100%; margin-top:10px; padding:8px; border:none; border-top:1px solid var(--border-soft);
+  background:transparent; color:var(--cream-faint); font-family:'Poppins',sans-serif;
+  font-size:10.5px; letter-spacing:.8px; text-transform:uppercase; cursor:pointer;
+  transition:color .15s ease;
+}
+.piece-adv-toggle:hover{ color:var(--accent-2); }
+
+.add-link-btn{
+  display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px;
+  width:100%; padding:13px; border:1.5px dashed var(--border); border-radius:10px;
+  background:transparent; color:var(--cream-dim);
+  font-family:'Poppins',sans-serif; font-size:12px; letter-spacing:.6px;
   cursor:pointer; transition:all .15s ease;
 }
-.add-photos-btn:hover{ background:rgba(138,138,94,0.16); }
-.add-photos-btn .plus-ic{ font-size:16px; }
+.add-link-btn:hover{ border-color:var(--accent); color:var(--accent-2); background:var(--accent-soft); }
+.add-link-btn .plus{ font-size:15px; }
 
-.tray-hint{
-  font-size:11px; color:var(--clay); margin-top:10px; line-height:1.5;
+/* ---------- advanced drawer ---------- */
+.adv-drawer{ margin-top:16px; border-top:1px solid var(--border-soft); padding-top:14px; }
+.adv-drawer > summary{
+  font-size:11px; letter-spacing:1.3px; text-transform:uppercase; color:var(--accent-2);
+  cursor:pointer; list-style:none; display:flex; align-items:center; gap:7px; padding:4px 0;
 }
-.tray{
-  display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;
-}
-.tray-item{
-  position:relative; width:60px; height:75px; border-radius:3px; overflow:hidden;
-  border:2px solid transparent; cursor:pointer; flex-shrink:0;
-  transition:border-color .15s ease, transform .1s ease;
-}
-.tray-item img{ width:100%; height:100%; object-fit:cover; display:block; }
-.tray-item:hover{ transform:translateY(-2px); }
-.tray-item.picked{ border-color:var(--olive); box-shadow:0 0 0 1px var(--olive); }
-.tray-item .badge{
-  position:absolute; top:2px; right:2px; width:14px; height:14px; border-radius:50%;
-  background:var(--olive-deep); color:var(--cream); font-size:8px;
-  display:flex; align-items:center; justify-content:center;
-}
-.tray-empty{ font-size:11px; color:#5c5850; font-style:italic; }
+.adv-drawer > summary::-webkit-details-marker{ display:none; }
+.adv-drawer > summary::before{ content:'⚙'; font-size:12px; }
+.adv-drawer-body{ padding-top:16px; }
 
-/* ---------- slots (fundo / inspo / peça) ---------- */
-.upload-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.adv-group{ margin-bottom:20px; }
+.adv-group-title{
+  font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--clay); margin-bottom:10px;
+}
+
+/* fields (reused inside advanced) */
+.field{ margin-bottom:12px; }
+.field label{ display:block; font-size:11px; letter-spacing:.4px; color:var(--cream-dim); margin-bottom:6px; }
+.field input[type=text]{
+  width:100%; background:#100d0a; border:1px solid var(--border); color:var(--cream);
+  font-family:'Poppins',sans-serif; font-weight:300; font-size:13px;
+  padding:10px 12px; border-radius:8px; outline:none; transition:border-color .15s ease;
+}
+.field input[type=text]:focus{ border-color:var(--accent); }
+.field input[type=text]::placeholder{ color:var(--cream-faint); }
+.field select{
+  width:100%; background:#100d0a; border:1px solid var(--border); color:var(--cream);
+  font-family:'Poppins',sans-serif; font-weight:300; font-size:13px;
+  padding:10px 12px; border-radius:8px; outline:none; transition:border-color .15s ease;
+  appearance:none; -webkit-appearance:none;
+}
+.field select:focus{ border-color:var(--accent); }
+
+.checkline{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--cream-dim); margin-top:9px; }
+.checkline input{ accent-color:var(--accent); }
+
+.btn-mini{
+  width:100%; margin-top:6px; padding:11px; border:1px solid var(--border); border-radius:8px;
+  background:transparent; color:var(--cream); font-family:'Poppins',sans-serif; font-size:11.5px;
+  letter-spacing:.6px; cursor:pointer; transition:all .15s ease;
+}
+.btn-mini:hover{ border-color:var(--accent); color:var(--accent-2); }
+.btn-mini:disabled{ color:var(--cream-faint); cursor:not-allowed; border-color:var(--border); }
+
+/* slots (insp1/insp2/garment) — compact version inside advanced */
+.upload-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
 .upload-grid.single{ grid-template-columns:1fr; }
-
 .drop{
   position:relative; aspect-ratio:4/5;
-  border:1px dashed var(--panel-border); border-radius:3px;
-  background:#161310;
+  border:1px dashed var(--border); border-radius:8px;
+  background:#100d0a;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
   cursor:pointer; overflow:hidden;
   transition:border-color .15s ease, background .15s ease;
 }
-.drop:hover{ border-color:var(--olive); background:#1a1712; }
-.drop.filled{ border-style:solid; border-color:var(--panel-border); }
-.drop.awaiting{ border-color:var(--olive); background:rgba(138,138,94,0.10); }
+.drop:hover{ border-color:var(--accent); background:var(--card-hover); }
+.drop.filled{ border-style:solid; border-color:var(--border); }
+.drop.awaiting{ border-color:var(--accent); background:var(--accent-soft); }
 .drop img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.drop .hint{ font-size:10px; letter-spacing:.5px; color:var(--cream-dim); text-align:center; padding:0 10px; }
-.drop .plus{ font-size:18px; color:var(--olive); font-weight:300; }
+.drop .hint{ font-size:9.5px; letter-spacing:.4px; color:var(--cream-dim); text-align:center; padding:0 8px; }
+.drop .plus{ font-size:16px; color:var(--accent-2); font-weight:300; }
 .drop .tag{
-  position:absolute; bottom:6px; left:6px; right:6px;
-  font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--cream-dim);
+  position:absolute; bottom:5px; left:5px; right:5px;
+  font-size:8.5px; letter-spacing:.6px; text-transform:uppercase; color:var(--cream-dim); text-align:center;
 }
-.drop.filled .tag{
-  background:rgba(15,13,11,.55); padding:3px 6px; border-radius:2px; color:var(--cream);
-}
+.drop.filled .tag{ background:rgba(12,10,9,.6); padding:3px 5px; border-radius:4px; color:var(--cream); }
 
-/* fields */
-.field{ margin-bottom:14px; }
-.field label{ display:block; font-size:11px; letter-spacing:.5px; color:var(--cream-dim); margin-bottom:6px; }
-.field input[type=text]{
-  width:100%; background:#161310; border:1px solid var(--panel-border); color:var(--cream);
-  font-family:'Poppins',sans-serif; font-weight:300; font-size:13.5px;
-  padding:10px 12px; border-radius:3px; outline:none; transition:border-color .15s ease;
-}
-.field input[type=text]:focus{ border-color:var(--olive); }
-.field input[type=text]::placeholder{ color:#5c5850; }
-.field select{
-  width:100%; background:#161310; border:1px solid var(--panel-border); color:var(--cream);
-  font-family:'Poppins',sans-serif; font-weight:300; font-size:13.5px;
-  padding:10px 12px; border-radius:3px; outline:none; transition:border-color .15s ease;
-  appearance:none; -webkit-appearance:none;
-}
-.field select:focus{ border-color:var(--olive); }
-
-.checkline{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--cream-dim); margin-top:8px; }
-.checkline input{ accent-color:var(--olive); }
-
-/* tabs (layout + pages) */
-.tab-row{ display:flex; flex-wrap:wrap; gap:8px; }
-.tab-chip{
-  padding:9px 16px; background:#161310; border:1px solid var(--panel-border); border-radius:3px;
-  color:var(--cream-dim); font-family:'Poppins',sans-serif; font-size:12px; letter-spacing:.5px;
-  cursor:pointer; transition:all .15s ease;
-}
-.tab-chip:hover{ border-color:var(--olive); color:var(--cream); }
-.tab-chip.active{ background:var(--olive-deep); border-color:var(--olive-deep); color:var(--cream); }
-
-.page-chip{
-  display:flex; align-items:center; gap:8px;
-  padding:8px 8px 8px 14px; background:#161310; border:1px solid var(--panel-border); border-radius:3px;
-  color:var(--cream-dim); font-size:12px; cursor:pointer; transition:all .15s ease;
-}
-.page-chip:hover{ border-color:var(--olive); color:var(--cream); }
-.page-chip.active{ background:var(--olive-deep); border-color:var(--olive-deep); color:var(--cream); }
-.page-chip .del{
-  width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-  font-size:11px; color:inherit; opacity:.6;
-}
-.page-chip .del:hover{ opacity:1; background:rgba(0,0,0,.2); }
-
-.add-page{
-  padding:8px 14px; border:1px dashed var(--panel-border); border-radius:3px;
-  color:var(--olive); font-size:12px; letter-spacing:.5px; cursor:pointer;
-  transition:all .15s ease;
-}
-.add-page:hover{ border-color:var(--olive); background:#1a1712; }
-
-/* advanced */
-details.adv{ border-top:1px solid var(--panel-border); padding-top:14px; margin-top:6px; }
-details.adv summary{
-  font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--olive);
-  cursor:pointer; list-style:none; display:flex; align-items:center; gap:6px;
-}
-details.adv summary::-webkit-details-marker{ display:none; }
-details.adv summary::before{ content:'+'; font-size:14px; }
-details.adv[open] summary::before{ content:'–'; }
-
-.slider-row{
-  display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px;
-  margin:12px 0 4px; font-size:11px; color:var(--cream-dim);
-}
-.slider-row span.val{ color:var(--cream); font-variant-numeric:tabular-nums; min-width:34px; text-align:right; }
-input[type=range]{ width:100%; -webkit-appearance:none; height:2px; background:var(--panel-border); border-radius:2px; outline:none; }
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--olive); cursor:pointer; margin-top:-5px;
-}
-.group-title{ font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--clay); margin:16px 0 2px; }
-
-.btn{
-  width:100%; margin-top:8px; padding:15px; border:none; border-radius:3px;
-  font-family:'Poppins',sans-serif; font-weight:500; font-size:13px; letter-spacing:1px; text-transform:uppercase;
-  cursor:pointer; transition:background .15s ease, transform .1s ease;
-}
-.btn:active{ transform:scale(0.98); }
-.btn-primary{ background:var(--cream); color:#151311; }
-.btn-primary:hover{ background:#fff; }
-.btn-secondary{ background:transparent; color:var(--cream); border:1px solid var(--panel-border); margin-top:10px; }
-.btn-secondary:hover{ border-color:var(--olive); color:var(--olive); }
-.btn:disabled{ background:#3a362f; color:#6b665c; cursor:not-allowed; border-color:var(--panel-border); }
-
-.status{ font-size:10.5px; color:var(--cream-dim); margin-top:10px; min-height:14px; letter-spacing:.3px; }
+.status{ font-size:10.5px; color:var(--cream-dim); margin-top:8px; min-height:14px; letter-spacing:.2px; }
 .status.ok{ color:var(--ok); }
-.status.hint{ color:var(--olive); }
-.status.err{ color:#d16a52; }
+.status.hint{ color:var(--accent-2); }
+.status.err{ color:var(--err); }
 
-.progress-wrap{ margin-top:10px; }
-.progress-bar{
-  width:100%; height:6px; background:#161310; border:1px solid var(--panel-border);
-  border-radius:4px; overflow:hidden;
-}
-.progress-fill{
-  height:100%; width:0%; background:var(--olive);
-  transition:width .4s ease;
-}
-.progress-label{
-  font-size:10.5px; color:var(--cream-dim); margin-top:6px; letter-spacing:.3px;
-  display:flex; justify-content:space-between; gap:8px;
-}
-.progress-label .eta{ color:var(--olive); white-space:nowrap; }
+.progress-wrap{ margin-top:9px; }
+.progress-bar{ width:100%; height:5px; background:#100d0a; border:1px solid var(--border); border-radius:4px; overflow:hidden; }
+.progress-fill{ height:100%; width:0%; background:var(--accent); transition:width .4s ease; }
+.progress-label{ font-size:10px; color:var(--cream-dim); margin-top:6px; letter-spacing:.2px; display:flex; justify-content:space-between; gap:8px; }
+.progress-label .eta{ color:var(--accent-2); white-space:nowrap; }
 
-.inspo-grid{
-  display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:12px;
-}
-.inspo-item{
-  position:relative; aspect-ratio:1/1; border-radius:3px; overflow:hidden;
-  border:2px solid transparent; cursor:pointer; transition:border-color .15s ease, transform .1s ease;
-}
+.inspo-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-top:10px; }
+.inspo-item{ position:relative; aspect-ratio:1/1; border-radius:6px; overflow:hidden; border:2px solid transparent; cursor:pointer; transition:border-color .15s ease, transform .1s ease; }
 .inspo-item:hover{ transform:translateY(-1px); }
 .inspo-item img{ width:100%; height:100%; object-fit:cover; display:block; }
-.inspo-item.picked{ border-color:var(--olive); box-shadow:0 0 0 1px var(--olive); }
+.inspo-item.picked{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
 .inspo-item .badge{
-  position:absolute; top:3px; right:3px; width:17px; height:17px; border-radius:50%;
-  background:var(--olive-deep); color:var(--cream); font-size:9.5px; font-weight:600;
+  position:absolute; top:3px; right:3px; width:16px; height:16px; border-radius:50%;
+  background:var(--accent); color:var(--ink); font-size:9px; font-weight:700;
   display:flex; align-items:center; justify-content:center;
 }
+.tray-hint{ font-size:10.5px; color:var(--clay); margin-top:8px; line-height:1.5; }
 
-/* stage */
+/* fine-tune nested details */
+details.adv-nested{ border-top:1px solid var(--border-soft); padding-top:12px; margin-top:16px; }
+details.adv-nested summary{
+  font-size:10.5px; letter-spacing:1.2px; text-transform:uppercase; color:var(--cream-faint);
+  cursor:pointer; list-style:none; display:flex; align-items:center; gap:6px;
+}
+details.adv-nested summary::-webkit-details-marker{ display:none; }
+details.adv-nested summary::before{ content:'+'; font-size:13px; }
+details.adv-nested[open] summary::before{ content:'–'; }
+
+.slider-row{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px; margin:11px 0 4px; font-size:10.5px; color:var(--cream-dim); }
+.slider-row span.val{ color:var(--cream); font-variant-numeric:tabular-nums; min-width:34px; text-align:right; }
+input[type=range]{ width:100%; -webkit-appearance:none; height:2px; background:var(--border); border-radius:2px; outline:none; }
+input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--accent); cursor:pointer; margin-top:-5px; }
+.group-title{ font-size:9.5px; letter-spacing:1.4px; text-transform:uppercase; color:var(--clay); margin:15px 0 2px; }
+
+/* ---------- footer (sticky) ---------- */
+.panel-footer{
+  position:sticky; bottom:0; left:0; right:0; margin:26px -26px -130px; padding:16px 26px 22px;
+  background:linear-gradient(180deg, transparent, var(--panel) 22%);
+}
+.btn{
+  width:100%; margin-top:8px; padding:14px; border:none; border-radius:10px;
+  font-family:'Poppins',sans-serif; font-weight:500; font-size:12.5px; letter-spacing:.8px; text-transform:uppercase;
+  cursor:pointer; transition:filter .15s ease, transform .1s ease, background .15s ease;
+}
+.btn:active{ transform:scale(0.98); }
+.btn-primary{ background:var(--cream); color:#1a1712; box-shadow:0 8px 20px -8px rgba(255,90,60,.35); }
+.btn-primary:hover{ filter:brightness(1.04); }
+.btn-ghost{ background:transparent; color:var(--cream); border:1px solid var(--border); margin-top:9px; }
+.btn-ghost:hover{ border-color:var(--accent); color:var(--accent-2); }
+.btn:disabled{ background:#2a2620; color:var(--cream-faint); cursor:not-allowed; box-shadow:none; border-color:var(--border); }
+
+/* ---------- stage ---------- */
 .stage{
   flex:1; display:flex; align-items:center; justify-content:center; padding:60px 40px;
   background:
-    radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.035), transparent 60%),
-    repeating-linear-gradient(180deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+    radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.03), transparent 60%),
+    repeating-linear-gradient(180deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 3px);
 }
-.canvas-wrap{
-  position:relative; box-shadow:0 30px 70px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
-  border-radius:2px; background:#000;
-}
-canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:2px; }
-.stage-caption{
-  position:absolute; bottom:-30px; left:0; right:0; text-align:center;
-  font-size:10.5px; letter-spacing:2px; text-transform:uppercase; color:#4d4941;
-}
+.canvas-wrap{ position:relative; box-shadow:0 30px 70px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04); border-radius:3px; background:#000; }
+canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:3px; }
+.stage-caption{ position:absolute; bottom:-30px; left:0; right:0; text-align:center; font-size:10.5px; letter-spacing:2px; text-transform:uppercase; color:#4d453c; }
 </style>
 </head>
 <body>
@@ -264,186 +337,187 @@ canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:2
 <div class="app">
   <div class="panel">
     <div class="brand">
-      <div class="eyebrow">studio de posts</div>
-      <h1>Post Studio</h1>
-    </div>
-
-    <div class="section">
-      <div class="section-label">Fotos</div>
-      <input type="file" id="bulkFileInput" accept="image/*" multiple style="display:none">
-      <div class="add-photos-btn" id="addPhotosBtn">
-        <span class="plus-ic">+</span> adicionar fotos
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4L12 2z" fill="#241005"/></svg>
       </div>
-      <div class="tray-hint" id="trayHint">selecione todas as fotos de uma vez, na ordem: <b>fundo → inspo 1 → inspo 2 → peça</b> (e repete inspo 1 → inspo 2 → peça pra cada página seguinte) — elas se encaixam sozinhas</div>
-      <div class="tray" id="photoTray">
-        <span class="tray-empty">nenhuma foto ainda</span>
+      <div>
+        <div class="brand-eyebrow">post studio</div>
+        <div class="brand-name">Atelier</div>
       </div>
     </div>
 
-    <div class="section">
-      <div class="section-label">Fundo (compartilhado)</div>
-      <div class="upload-grid single">
-        <div class="drop" id="drop-bg" data-slot="bg">
-          <span class="plus">+</span>
-          <span class="hint">clique numa foto da biblioteca, depois aqui</span>
+    <!-- Passo 1: Fundo -->
+    <div class="step">
+      <div class="step-head">
+        <div class="step-badge">1</div>
+        <div>
+          <div class="step-title">Fundo</div>
+          <div class="step-hint">a base compartilhada por todas as páginas</div>
         </div>
       </div>
+      <div class="bg-drop" id="drop-bg"></div>
     </div>
 
-    <div class="section">
-      <div class="section-label">Páginas</div>
-      <div class="tab-row" id="pageTabs"></div>
-      <div class="add-page" id="addPageBtn" style="margin-top:8px;">+ nova página</div>
-    </div>
-
-    <div class="section">
-      <div class="section-label">Modelo de layout (desta página)</div>
-      <div class="tab-row" id="layoutTabs"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-label">Inspirações (desta página)</div>
-
-      <div class="field">
-        <label>Buscar no Pinterest</label>
-        <input type="text" id="inspoQueryText" placeholder="ex: vestido animal print verão">
-      </div>
-      <button class="btn btn-secondary" id="fetchInspoBtn" type="button" style="margin-top:2px;">buscar 8 inspos</button>
-      <div class="status" id="inspoJobStatus"></div>
-
-      <div class="inspo-grid" id="inspoResultsGrid" style="display:none;"></div>
-      <div class="tray-hint" id="inspoPickHint" style="display:none;">clique em 2 fotos pra usar como inspo 1 e inspo 2</div>
-
-      <div class="upload-grid" style="margin-top:14px;">
-        <div class="drop" id="drop-insp1" data-slot="insp1">
-          <span class="plus">+</span><span class="hint">ou envie inspo 1 manualmente</span>
-        </div>
-        <div class="drop" id="drop-insp2" data-slot="insp2">
-          <span class="plus">+</span><span class="hint">ou envie inspo 2 manualmente</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-label">Peça (desta página)</div>
-
-      <div class="field">
-        <label>Link da Shein</label>
-        <input type="text" id="sheinUrlText" placeholder="cole o link do produto aqui">
-      </div>
-      <div class="field">
-        <label>Tipo de peça (pro garment-reconstructor)</label>
-        <select id="pecaSelect">
-          <option value="">auto (detectar sozinho)</option>
-          <option value="vestido">vestido</option>
-          <option value="blusa">blusa</option>
-          <option value="saia">saia</option>
-          <option value="calca">calça</option>
-          <option value="short">short</option>
-          <option value="cinto">cinto</option>
-          <option value="sapato">sapato</option>
-          <option value="bolsa">bolsa</option>
-          <option value="lenco">lenço</option>
-          <option value="chapeu">chapéu</option>
-        </select>
-      </div>
-      <button class="btn btn-secondary" id="fetchPieceBtn" type="button" style="margin-top:2px;">buscar peça na shein</button>
-      <div class="status" id="pieceJobStatus"></div>
-      <div class="progress-wrap" id="pieceProgressWrap" style="display:none;">
-        <div class="progress-bar"><div class="progress-fill" id="pieceProgressFill"></div></div>
-        <div class="progress-label">
-          <span id="pieceProgressStep"></span>
-          <span class="eta" id="pieceProgressEta"></span>
+    <!-- Passo 2: Peças (links) -->
+    <div class="step">
+      <div class="step-head">
+        <div class="step-badge">2</div>
+        <div>
+          <div class="step-title">Peças</div>
+          <div class="step-hint">cole o link da Shein — cada um vira uma página</div>
         </div>
       </div>
 
-      <div class="upload-grid single" style="margin-top:14px;">
-        <div class="drop" id="drop-garment" data-slot="garment">
-          <span class="plus">+</span><span class="hint">ou envie a foto da peça manualmente</span>
+      <div class="piece-list" id="pieceCards"></div>
+
+      <div class="add-link-btn" id="addPageBtn">
+        <span class="plus">+</span> adicionar link
+      </div>
+
+      <details class="adv-drawer" id="advDrawer">
+        <summary id="advDrawerSummary">ajustes manuais desta página</summary>
+        <div class="adv-drawer-body">
+
+          <div class="adv-group">
+            <div class="adv-group-title">Peça</div>
+            <div class="field">
+              <label>Tipo de peça (pro garment-reconstructor)</label>
+              <select id="pecaSelect">
+                <option value="">auto (detectar sozinho)</option>
+                <option value="vestido">vestido</option>
+                <option value="blusa">blusa</option>
+                <option value="saia">saia</option>
+                <option value="calca">calça</option>
+                <option value="short">short</option>
+                <option value="cinto">cinto</option>
+                <option value="sapato">sapato</option>
+                <option value="bolsa">bolsa</option>
+                <option value="lenco">lenço</option>
+                <option value="chapeu">chapéu</option>
+              </select>
+            </div>
+            <button class="btn-mini" id="fetchPieceBtn" type="button">buscar peça na shein</button>
+            <div class="status" id="pieceJobStatus"></div>
+            <div class="progress-wrap" id="pieceProgressWrap" style="display:none;">
+              <div class="progress-bar"><div class="progress-fill" id="pieceProgressFill"></div></div>
+              <div class="progress-label">
+                <span id="pieceProgressStep"></span>
+                <span class="eta" id="pieceProgressEta"></span>
+              </div>
+            </div>
+            <div class="upload-grid single">
+              <div class="drop" id="drop-garment">
+                <span class="plus">+</span><span class="hint">ou envie a foto da peça manualmente</span>
+              </div>
+            </div>
+            <label class="checkline">
+              <input type="checkbox" id="removeWhite" checked>
+              remover fundo branco automaticamente
+            </label>
+          </div>
+
+          <div class="adv-group">
+            <div class="adv-group-title">Inspirações</div>
+            <div class="field">
+              <label>Buscar no Pinterest</label>
+              <input type="text" id="inspoQueryText" placeholder="ex: vestido animal print verão">
+            </div>
+            <button class="btn-mini" id="fetchInspoBtn" type="button">buscar 16 inspos</button>
+            <div class="status" id="inspoJobStatus"></div>
+            <div class="inspo-grid" id="inspoResultsGrid" style="display:none;"></div>
+            <div class="tray-hint" id="inspoPickHint" style="display:none;">clique em 2 fotos pra usar como inspo 1 e inspo 2</div>
+            <div class="upload-grid">
+              <div class="drop" id="drop-insp1">
+                <span class="plus">+</span><span class="hint">ou envie inspo 1 manualmente</span>
+              </div>
+              <div class="drop" id="drop-insp2">
+                <span class="plus">+</span><span class="hint">ou envie inspo 2 manualmente</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="adv-group">
+            <div class="adv-group-title">Textos</div>
+            <div class="field">
+              <label>Título (entre as polaroids)</label>
+              <input type="text" id="titleText" placeholder="ex: vibes de verão" maxlength="40">
+            </div>
+            <div class="field">
+              <label>SKU</label>
+              <input type="text" id="skuText" placeholder="ex: sz2405159396750053" maxlength="40">
+            </div>
+          </div>
+
+          <details class="adv-nested">
+            <summary>ajustes finos de posição</summary>
+
+            <div class="group-title">Polaroid 1 (frente)</div>
+            <div class="slider-row"><label>posição x</label><span class="val" id="v-p1x">615</span></div>
+            <input type="range" id="p1x" min="0" max="1080" value="615">
+            <div class="slider-row"><label>posição y</label><span class="val" id="v-p1y">420</span></div>
+            <input type="range" id="p1y" min="0" max="1350" value="420">
+            <div class="slider-row"><label>rotação</label><span class="val" id="v-p1a">0</span></div>
+            <input type="range" id="p1a" min="-25" max="25" value="0">
+
+            <div class="group-title">Polaroid 2 (fundo)</div>
+            <div class="slider-row"><label>posição x</label><span class="val" id="v-p2x">461</span></div>
+            <input type="range" id="p2x" min="0" max="1080" value="461">
+            <div class="slider-row"><label>posição y</label><span class="val" id="v-p2y">104</span></div>
+            <input type="range" id="p2y" min="0" max="1350" value="104">
+            <div class="slider-row"><label>rotação</label><span class="val" id="v-p2a">7</span></div>
+            <input type="range" id="p2a" min="-25" max="25" value="7">
+
+            <label class="checkline">
+              <input type="checkbox" id="showInspo" checked>
+              mostrar selo "inspo"
+            </label>
+
+            <div class="group-title">Título</div>
+            <div class="slider-row"><label>posição y</label><span class="val" id="v-ty">442</span></div>
+            <input type="range" id="ty" min="0" max="1350" value="442">
+            <div class="slider-row"><label>tamanho da fonte</label><span class="val" id="v-tsize">70</span></div>
+            <input type="range" id="tsize" min="30" max="160" value="70">
+            <div class="slider-row"><label>espaçamento entre letras</label><span class="val" id="v-tspace">-4</span></div>
+            <input type="range" id="tspace" min="-20" max="20" value="-4">
+            <div class="slider-row"><label>espessura do contorno</label><span class="val" id="v-tstroke">0</span></div>
+            <input type="range" id="tstroke" min="0" max="14" value="0">
+
+            <div class="group-title">Peça</div>
+            <div class="slider-row"><label>posição x</label><span class="val" id="v-gx">90</span></div>
+            <input type="range" id="gx" min="0" max="1080" value="90">
+            <div class="slider-row"><label>posição y</label><span class="val" id="v-gy">720</span></div>
+            <input type="range" id="gy" min="0" max="1350" value="720">
+            <div class="slider-row"><label>tamanho</label><span class="val" id="v-gsize">900</span></div>
+            <input type="range" id="gsize" min="200" max="1080" value="900">
+            <div class="slider-row"><label>borda</label><span class="val" id="v-gborder">14</span></div>
+            <input type="range" id="gborder" min="0" max="40" value="14">
+            <div class="slider-row"><label>limiar remoção do branco</label><span class="val" id="v-wthresh">235</span></div>
+            <input type="range" id="wthresh" min="180" max="255" value="235">
+
+            <div class="group-title">SKU</div>
+            <div class="slider-row"><label>posição x</label><span class="val" id="v-skux">37</span></div>
+            <input type="range" id="skux" min="0" max="1080" value="37">
+            <div class="slider-row"><label>posição y</label><span class="val" id="v-skuy">70</span></div>
+            <input type="range" id="skuy" min="0" max="1350" value="70">
+            <div class="slider-row"><label>opacidade</label><span class="val" id="v-skuop">43</span></div>
+            <input type="range" id="skuop" min="5" max="100" value="43">
+
+            <div class="group-title">Escurecimento do fundo</div>
+            <div class="slider-row"><label>topo</label><span class="val" id="v-otop">25</span></div>
+            <input type="range" id="otop" min="0" max="100" value="25">
+            <div class="slider-row"><label>base</label><span class="val" id="v-obot">60</span></div>
+            <input type="range" id="obot" min="0" max="100" value="60">
+          </details>
+
         </div>
-      </div>
-      <label class="checkline">
-        <input type="checkbox" id="removeWhite" checked>
-        remover fundo branco automaticamente
-      </label>
+      </details>
     </div>
 
-    <div class="section">
-      <div class="section-label">Textos</div>
-      <div class="field">
-        <label>Título (entre as polaroids)</label>
-        <input type="text" id="titleText" placeholder="ex: vibes de verão" maxlength="40">
-      </div>
-      <div class="field">
-        <label>SKU</label>
-        <input type="text" id="skuText" placeholder="ex: sz2405159396750053" maxlength="40">
-      </div>
+    <div class="panel-footer">
+      <button class="btn btn-primary" id="downloadBtn" disabled>Baixar esta página</button>
+      <button class="btn btn-ghost" id="downloadAllBtn" disabled>Baixar todas (.zip)</button>
+      <div class="status" id="status">comece adicionando a foto de fundo</div>
     </div>
-
-    <details class="adv">
-      <summary>Ajustes finos (desta página)</summary>
-
-      <div class="group-title">Polaroid 1 (frente)</div>
-      <div class="slider-row"><label>posição x</label><span class="val" id="v-p1x">615</span></div>
-      <input type="range" id="p1x" min="0" max="1080" value="615">
-      <div class="slider-row"><label>posição y</label><span class="val" id="v-p1y">420</span></div>
-      <input type="range" id="p1y" min="0" max="1350" value="420">
-      <div class="slider-row"><label>rotação</label><span class="val" id="v-p1a">0</span></div>
-      <input type="range" id="p1a" min="-25" max="25" value="0">
-
-      <div class="group-title">Polaroid 2 (fundo)</div>
-      <div class="slider-row"><label>posição x</label><span class="val" id="v-p2x">461</span></div>
-      <input type="range" id="p2x" min="0" max="1080" value="461">
-      <div class="slider-row"><label>posição y</label><span class="val" id="v-p2y">104</span></div>
-      <input type="range" id="p2y" min="0" max="1350" value="104">
-      <div class="slider-row"><label>rotação</label><span class="val" id="v-p2a">7</span></div>
-      <input type="range" id="p2a" min="-25" max="25" value="7">
-
-      <label class="checkline">
-        <input type="checkbox" id="showInspo" checked>
-        mostrar selo "inspo"
-      </label>
-
-      <div class="group-title">Título</div>
-      <div class="slider-row"><label>posição y</label><span class="val" id="v-ty">442</span></div>
-      <input type="range" id="ty" min="0" max="1350" value="442">
-      <div class="slider-row"><label>tamanho da fonte</label><span class="val" id="v-tsize">70</span></div>
-      <input type="range" id="tsize" min="30" max="160" value="70">
-      <div class="slider-row"><label>espaçamento entre letras</label><span class="val" id="v-tspace">-4</span></div>
-      <input type="range" id="tspace" min="-20" max="20" value="-4">
-      <div class="slider-row"><label>espessura do contorno</label><span class="val" id="v-tstroke">0</span></div>
-      <input type="range" id="tstroke" min="0" max="14" value="0">
-
-      <div class="group-title">Peça</div>
-      <div class="slider-row"><label>posição x</label><span class="val" id="v-gx">90</span></div>
-      <input type="range" id="gx" min="0" max="1080" value="90">
-      <div class="slider-row"><label>posição y</label><span class="val" id="v-gy">720</span></div>
-      <input type="range" id="gy" min="0" max="1350" value="720">
-      <div class="slider-row"><label>tamanho</label><span class="val" id="v-gsize">900</span></div>
-      <input type="range" id="gsize" min="200" max="1080" value="900">
-      <div class="slider-row"><label>borda</label><span class="val" id="v-gborder">14</span></div>
-      <input type="range" id="gborder" min="0" max="40" value="14">
-      <div class="slider-row"><label>limiar remoção do branco</label><span class="val" id="v-wthresh">235</span></div>
-      <input type="range" id="wthresh" min="180" max="255" value="235">
-
-      <div class="group-title">SKU</div>
-      <div class="slider-row"><label>posição x</label><span class="val" id="v-skux">37</span></div>
-      <input type="range" id="skux" min="0" max="1080" value="37">
-      <div class="slider-row"><label>posição y</label><span class="val" id="v-skuy">70</span></div>
-      <input type="range" id="skuy" min="0" max="1350" value="70">
-      <div class="slider-row"><label>opacidade</label><span class="val" id="v-skuop">43</span></div>
-      <input type="range" id="skuop" min="5" max="100" value="43">
-
-      <div class="group-title">Escurecimento do fundo</div>
-      <div class="slider-row"><label>topo</label><span class="val" id="v-otop">25</span></div>
-      <input type="range" id="otop" min="0" max="100" value="25">
-      <div class="slider-row"><label>base</label><span class="val" id="v-obot">60</span></div>
-      <input type="range" id="obot" min="0" max="100" value="60">
-    </details>
-
-    <button class="btn btn-primary" id="downloadBtn" disabled>Baixar esta página</button>
-    <button class="btn btn-secondary" id="downloadAllBtn" disabled>Baixar todas as páginas (.zip)</button>
-    <div class="status" id="status">envie as fotos pra começar</div>
   </div>
 
   <div class="stage">
@@ -483,15 +557,12 @@ const LAYOUTS = {
 };
 const PARAM_KEYS = ['p1x','p1y','p1a','p2x','p2y','p2a','showInspo','ty','tsize','tspace','tstroke',
                      'gx','gy','gsize','gborder','wthresh','skux','skuy','skuop','otop','obot'];
+const P1_SIZE = [410,450], P2_SIZE = [410,450];
 
 // ---------- estado global ----------
 let bgImage = null;
 let pages = [];
 let activeIndex = 0;
-let library = [];      // { img, src }
-let pickedIndex = null; // índice selecionado na biblioteca (uso manual/corretivo)
-let fillCursor = {pageIndex:0, slotIndex:0}; // preenchimento automático em ordem
-const SLOT_ORDER = ['insp1','insp2','garment'];
 
 function newPage(layoutKey){
   return {
@@ -510,10 +581,173 @@ function newPage(layoutKey){
   };
 }
 
+// ---------- miniatura visual do layout (usa os presets reais) ----------
+function buildSwatchHTML(layoutKey){
+  const p = LAYOUTS[layoutKey];
+  const p1 = { l:p.p1x/W*100, t:p.p1y/H*100, w:P1_SIZE[0]/W*100, h:P1_SIZE[1]/H*100 };
+  const p2 = { l:p.p2x/W*100, t:p.p2y/H*100, w:P2_SIZE[0]/W*100, h:P2_SIZE[1]/H*100 };
+  const gSizePct = p.gsize/W*100;
+  const g  = { l:p.gx/W*100, t:p.gy/H*100, w:gSizePct, h:p.gsize/H*100 };
+  return `<div class="layout-swatch">
+    <div class="sw-g" style="left:${g.l}%;top:${g.t}%;width:${g.w}%;height:${g.h}%;"></div>
+    <div class="sw-p" style="left:${p2.l}%;top:${p2.t}%;width:${p2.w}%;height:${p2.h}%;transform:rotate(${p.p2a}deg);"></div>
+    <div class="sw-p" style="left:${p1.l}%;top:${p1.t}%;width:${p1.w}%;height:${p1.h}%;transform:rotate(${p.p1a}deg);"></div>
+  </div>`;
+}
+
+// ---------- cartões de peça (link -> página) ----------
+function pieceThumbHTML(page){
+  if(page.jobStatus === 'running' || page.jobStatus === 'queued'){
+    return `<div class="thumb-spinner"></div>`;
+  }
+  if(page.garment){
+    return `<img src="${page.garment.src}">`;
+  }
+  return `<div class="thumb-empty">＋</div>`;
+}
+
+function pieceStatusText(page){
+  if(page.jobStatus === 'queued') return 'na fila…';
+  if(page.jobStatus === 'running') return page.jobStage || 'processando…';
+  if(page.jobStatus === 'error') return 'erro — toque pra tentar de novo';
+  if(page.jobStatus === 'done') return 'peça encontrada ✓';
+  if(page.sheinUrl) return 'toque em → pra buscar';
+  return 'cole o link e toque em →';
+}
+
+function refreshPieceCardsStatus(){
+  pages.forEach((page,i)=>{
+    const thumb = document.getElementById(`cardThumb-${i}`);
+    const status = document.getElementById(`cardStatus-${i}`);
+    const go = document.getElementById(`cardGo-${i}`);
+    const card = document.querySelector(`.piece-card[data-index="${i}"]`);
+    const busy = page.jobStatus === 'queued' || page.jobStatus === 'running';
+    if(thumb) thumb.innerHTML = pieceThumbHTML(page);
+    if(status){
+      status.textContent = pieceStatusText(page);
+      status.classList.toggle('err', page.jobStatus === 'error');
+      status.classList.toggle('ok', page.jobStatus === 'done');
+      status.classList.toggle('hint', busy);
+    }
+    if(go) go.disabled = busy;
+    if(card) card.classList.toggle('active', i === activeIndex);
+
+    const progEl = document.getElementById(`cardProg-${i}`);
+    if(progEl){
+      const p = page.jobProgress;
+      if(page.jobStatus === 'running' && p && p.total_steps){
+        progEl.style.display = 'block';
+        progEl.querySelector('.piece-progress-fill').style.width = (p.percent || 0) + '%';
+      } else {
+        progEl.style.display = 'none';
+      }
+    }
+  });
+}
+
+async function triggerPieceSearch(i){
+  const page = pages[i];
+  const url = (page.sheinUrl || '').trim();
+  if(!url){
+    const status = document.getElementById(`cardStatus-${i}`);
+    if(status){ status.textContent = 'cole o link do produto primeiro'; status.classList.add('err'); }
+    return;
+  }
+  page.jobStatus = 'queued';
+  page.jobStage = 'na fila…';
+  page.jobError = null;
+  page.jobProgress = null;
+  refreshPieceCardsStatus();
+  if(i === activeIndex) updatePieceJobUI(page);
+
+  try{
+    const res = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({url, peca: page.peca}),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'falha ao criar job');
+    page.jobId = data.id;
+  } catch(err){
+    page.jobStatus = 'error';
+    page.jobError = err.message || String(err);
+  }
+  refreshPieceCardsStatus();
+  if(i === activeIndex) updatePieceJobUI(page);
+}
+
+function createPieceCardEl(i){
+  const page = pages[i];
+  const card = document.createElement('div');
+  card.className = 'piece-card';
+  card.dataset.index = i;
+  const safeUrl = (page.sheinUrl || '').replace(/"/g,'&quot;');
+  card.innerHTML = `
+    <div class="piece-card-top">
+      <div class="piece-thumb" id="cardThumb-${i}">${pieceThumbHTML(page)}</div>
+      <div class="piece-main">
+        <div class="piece-url-row">
+          <input type="text" class="piece-url" id="cardUrl-${i}" placeholder="cole o link do produto aqui" value="${safeUrl}">
+          <button class="piece-go" id="cardGo-${i}" type="button" title="buscar">→</button>
+        </div>
+        <div class="piece-status" id="cardStatus-${i}">${pieceStatusText(page)}</div>
+        <div class="piece-progress" id="cardProg-${i}" style="display:none;">
+          <div class="piece-progress-bar"><div class="piece-progress-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+      ${pages.length>1 ? `<button class="piece-del" type="button" title="remover">✕</button>` : ''}
+    </div>
+    <div class="layout-row">
+      ${Object.keys(LAYOUTS).map(k=>`<button type="button" class="layout-btn ${page.layout===k?'active':''}" data-layout="${k}">${buildSwatchHTML(k)}<span>${k.toUpperCase()}</span></button>`).join('')}
+    </div>
+    <button class="piece-adv-toggle" type="button">ajustar manualmente</button>
+  `;
+
+  const urlInput = card.querySelector(`#cardUrl-${i}`);
+  urlInput.addEventListener('input', ()=>{ pages[i].sheinUrl = urlInput.value; });
+  urlInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); triggerPieceSearch(i); } });
+
+  card.querySelector(`#cardGo-${i}`).addEventListener('click', (e)=>{ e.stopPropagation(); triggerPieceSearch(i); });
+
+  const delBtn = card.querySelector('.piece-del');
+  if(delBtn) delBtn.addEventListener('click', (e)=>{ e.stopPropagation(); removePage(i); });
+
+  card.querySelectorAll('.layout-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const key = btn.dataset.layout;
+      pages[i].layout = key;
+      pages[i].params = {...LAYOUTS[key]};
+      card.querySelectorAll('.layout-btn').forEach(b=> b.classList.toggle('active', b===btn));
+      if(i === activeIndex) setActive(i); else render();
+    });
+  });
+
+  card.querySelector('.piece-adv-toggle').addEventListener('click', (e)=>{ e.stopPropagation(); openAdvancedFor(i); });
+  card.querySelector(`#cardThumb-${i}`).addEventListener('click', ()=> setActive(i));
+  card.querySelector(`#cardStatus-${i}`).addEventListener('click', ()=> setActive(i));
+
+  return card;
+}
+
+function buildPieceCards(){
+  const wrap = $('pieceCards');
+  wrap.innerHTML = '';
+  pages.forEach((_,i)=> wrap.appendChild(createPieceCardEl(i)));
+}
+
+function openAdvancedFor(i){
+  setActive(i);
+  const adv = $('advDrawer');
+  adv.open = true;
+  adv.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
 function addPage(){
   pages.push(newPage('s1'));
+  buildPieceCards();
   setActive(pages.length-1);
-  buildPageTabs();
 }
 
 function removePage(i){
@@ -521,7 +755,7 @@ function removePage(i){
   pages.splice(i,1);
   pages.forEach((p,idx)=> p.name = `Página ${idx+1}`);
   activeIndex = Math.max(0, Math.min(activeIndex, pages.length-1));
-  buildPageTabs();
+  buildPieceCards();
   setActive(activeIndex);
 }
 
@@ -531,12 +765,12 @@ function setActive(i){
 
   $('titleText').value = page.title;
   $('skuText').value = page.sku;
-  $('sheinUrlText').value = page.sheinUrl;
   $('pecaSelect').value = page.peca;
   updatePieceJobUI(page);
   $('inspoQueryText').value = page.inspoQuery;
   updateInspoJobUI(page);
   renderInspoGrid(page);
+  $('advDrawerSummary').textContent = `ajustes manuais — ${page.name}`;
 
   PARAM_KEYS.forEach(key=>{
     if(key === 'showInspo'){
@@ -554,15 +788,13 @@ function setActive(i){
   refreshSlot('drop-insp2', page.insp2, 'ou envie inspo 2 manualmente');
   refreshSlot('drop-garment', page.garment, 'ou envie a foto da peça manualmente');
 
-  document.querySelectorAll('.page-chip').forEach((el,idx)=> el.classList.toggle('active', idx===i));
-  document.querySelectorAll('.layout-tab').forEach(el=> el.classList.toggle('active', el.dataset.layout===page.layout));
-
   $('stageCaption').textContent = `preview · ${page.name} (${page.layout.toUpperCase()}) · 1080 × 1350`;
 
+  refreshPieceCardsStatus();
   render();
 }
 
-// ---------- biblioteca de fotos (upload em lote) ----------
+// ---------- upload de arquivo (drag&drop + clique), por slot ----------
 function loadFileToImage(file){
   return new Promise((resolve)=>{
     const reader = new FileReader();
@@ -575,72 +807,54 @@ function loadFileToImage(file){
   });
 }
 
-$('addPhotosBtn').addEventListener('click', ()=> $('bulkFileInput').click());
+function makeDropZone(dropId, onFile){
+  const el = $(dropId);
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
 
-$('bulkFileInput').addEventListener('change', async ()=>{
-  const files = Array.from($('bulkFileInput').files || []);
-  $('bulkFileInput').value = '';
-  if(files.length === 0) return;
-
-  const imgs = [];
-  for(const file of files){
-    const img = await loadFileToImage(file);
-    imgs.push(img);
-    library.push({img, src:img.src}); // fica disponível pra reuso/correção manual
-  }
-
-  let queue = imgs.slice();
-
-  // a primeiríssima foto que o app recebe vira o fundo, uma única vez
-  if(bgImage === null && queue.length > 0){
-    bgImage = queue.shift();
-    refreshSlot('drop-bg', bgImage, '');
-  }
-
-  let lastTouchedPage = fillCursor.pageIndex;
-  for(const img of queue){
-    if(fillCursor.pageIndex >= pages.length){
-      pages.push(newPage('s1'));
-    }
-    const page = pages[fillCursor.pageIndex];
-    const slot = SLOT_ORDER[fillCursor.slotIndex];
-    page[slot] = img;
-    if(slot === 'garment') page.garmentCache = {threshold:null, canvas:null, srcImg:null};
-    lastTouchedPage = fillCursor.pageIndex;
-
-    fillCursor.slotIndex++;
-    if(fillCursor.slotIndex >= SLOT_ORDER.length){
-      fillCursor.slotIndex = 0;
-      fillCursor.pageIndex++;
-    }
-  }
-
-  renderTray();
-  buildPageTabs();
-  setActive(lastTouchedPage);
-});
-
-function renderTray(){
-  const tray = $('photoTray');
-  tray.innerHTML = '';
-  if(library.length === 0){
-    tray.innerHTML = '<span class="tray-empty">nenhuma foto ainda</span>';
-    return;
-  }
-  library.forEach((item, i)=>{
-    const el = document.createElement('div');
-    el.className = 'tray-item' + (pickedIndex===i ? ' picked' : '');
-    el.innerHTML = `<img src="${item.src}">` + (pickedIndex===i ? '<div class="badge">✓</div>' : '');
-    el.addEventListener('click', ()=>{
-      pickedIndex = (pickedIndex === i) ? null : i;
-      renderTray();
-      updateStatus();
-    });
-    tray.appendChild(el);
+  el.addEventListener('click', ()=> fileInput.click());
+  fileInput.addEventListener('change', async ()=>{
+    const file = fileInput.files && fileInput.files[0];
+    fileInput.value = '';
+    if(!file) return;
+    onFile(await loadFileToImage(file));
+  });
+  el.addEventListener('dragover', e=>{ e.preventDefault(); el.classList.add('awaiting'); });
+  el.addEventListener('dragleave', ()=> el.classList.remove('awaiting'));
+  el.addEventListener('drop', async e=>{
+    e.preventDefault();
+    el.classList.remove('awaiting');
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(!file) return;
+    onFile(await loadFileToImage(file));
   });
 }
 
-// ---------- slots (fundo / inspo1 / inspo2 / peça) ----------
+function refreshBgSlot(){
+  const el = $('drop-bg');
+  if(bgImage){
+    el.classList.add('filled');
+    el.innerHTML = `<img src="${bgImage.src}"><div class="tag">clique ou arraste pra trocar</div>`;
+  } else {
+    el.classList.remove('filled');
+    el.innerHTML = `
+      <svg class="bg-icon" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="8.2" cy="8.6" r="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M4 16.5l4.6-5.4 3.3 3.9 2.6-3 4.5 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="hint">clique ou arraste a foto de fundo aqui</span>`;
+  }
+}
+
+makeDropZone('drop-bg', (img)=>{ bgImage = img; refreshBgSlot(); render(); });
+makeDropZone('drop-insp1', (img)=>{ pages[activeIndex].insp1 = img; refreshSlot('drop-insp1', img, 'ou envie inspo 1 manualmente'); render(); });
+makeDropZone('drop-insp2', (img)=>{ pages[activeIndex].insp2 = img; refreshSlot('drop-insp2', img, 'ou envie inspo 2 manualmente'); render(); });
+makeDropZone('drop-garment', (img)=>{
+  const page = pages[activeIndex];
+  page.garment = img;
+  page.garmentCache = {threshold:null, canvas:null, srcImg:null};
+  refreshSlot('drop-garment', img, 'ou envie a foto da peça manualmente');
+  render();
+});
+
 function refreshSlot(dropId, img, label){
   const drop = $(dropId);
   if(img){
@@ -650,79 +864,6 @@ function refreshSlot(dropId, img, label){
     drop.classList.remove('filled');
     drop.innerHTML = `<span class="plus">+</span><span class="hint">${label}</span>`;
   }
-}
-
-function assignToSlot(slot){
-  if(pickedIndex === null){
-    const s = $('status');
-    s.textContent = 'selecione uma foto na biblioteca acima primeiro';
-    s.classList.add('hint');
-    setTimeout(()=>{ s.classList.remove('hint'); updateStatus(); }, 1800);
-    return;
-  }
-  const img = library[pickedIndex].img;
-
-  if(slot === 'bg'){
-    bgImage = img;
-    refreshSlot('drop-bg', img, '');
-  } else {
-    const page = pages[activeIndex];
-    page[slot] = img;
-    if(slot === 'garment') page.garmentCache = {threshold:null, canvas:null, srcImg:null};
-    refreshSlot('drop-'+slot, img, '');
-  }
-
-  pickedIndex = null;
-  renderTray();
-  render();
-}
-
-['drop-bg','drop-insp1','drop-insp2','drop-garment'].forEach(id=>{
-  $(id).addEventListener('click', ()=> assignToSlot($(id).dataset.slot));
-});
-
-function updateDropAwaitingState(){
-  const awaiting = pickedIndex !== null;
-  ['drop-bg','drop-insp1','drop-insp2','drop-garment'].forEach(id=>{
-    $(id).classList.toggle('awaiting', awaiting);
-  });
-}
-
-// ---------- páginas / layout tabs ----------
-function buildPageTabs(){
-  const wrap = $('pageTabs');
-  wrap.innerHTML = '';
-  pages.forEach((p,i)=>{
-    const chip = document.createElement('div');
-    chip.className = 'page-chip' + (i===activeIndex ? ' active':'');
-    chip.innerHTML = `<span>${p.name}</span>` + (pages.length>1 ? `<span class="del" data-i="${i}">✕</span>` : '');
-    chip.addEventListener('click', (e)=>{
-      if(e.target.classList.contains('del')){
-        e.stopPropagation();
-        removePage(Number(e.target.dataset.i));
-      } else {
-        setActive(i);
-      }
-    });
-    wrap.appendChild(chip);
-  });
-}
-
-function buildLayoutTabs(){
-  const wrap = $('layoutTabs');
-  Object.keys(LAYOUTS).forEach(key=>{
-    const btn = document.createElement('div');
-    btn.className = 'tab-chip layout-tab';
-    btn.dataset.layout = key;
-    btn.textContent = key.toUpperCase();
-    btn.addEventListener('click', ()=>{
-      const page = pages[activeIndex];
-      page.layout = key;
-      page.params = {...LAYOUTS[key]};
-      setActive(activeIndex);
-    });
-    wrap.appendChild(btn);
-  });
 }
 
 // ---------- sliders / textos ----------
@@ -743,7 +884,6 @@ $('showInspo').addEventListener('change', ()=>{
 $('removeWhite').addEventListener('change', render);
 $('titleText').addEventListener('input', ()=>{ pages[activeIndex].title = $('titleText').value; render(); });
 $('skuText').addEventListener('input', ()=>{ pages[activeIndex].sku = $('skuText').value; render(); });
-$('sheinUrlText').addEventListener('input', ()=>{ pages[activeIndex].sheinUrl = $('sheinUrlText').value; });
 $('pecaSelect').addEventListener('change', ()=>{ pages[activeIndex].peca = $('pecaSelect').value; });
 
 // ---------- busca automática da peça via pipeline (link Shein -> foto + sku) ----------
@@ -786,8 +926,6 @@ function updatePieceJobUI(page){
     btn.textContent = 'tentar de novo';
   }
 
-  // barra de progresso — só aparece durante a geração da imagem (mflux),
-  // que é a etapa que tem step/total conhecidos.
   const p = page.jobProgress;
   if(page.jobStatus === 'running' && p && p.total_steps){
     progWrap.style.display = 'block';
@@ -808,41 +946,7 @@ function loadImageFromDataUrl(dataUrl){
   });
 }
 
-$('fetchPieceBtn').addEventListener('click', async ()=>{
-  const page = pages[activeIndex];
-  const url = $('sheinUrlText').value.trim();
-  const peca = $('pecaSelect').value;
-
-  if(!url){
-    const s = $('pieceJobStatus');
-    s.textContent = 'cole o link do produto da Shein primeiro';
-    s.classList.add('err');
-    return;
-  }
-
-  page.sheinUrl = url;
-  page.peca = peca;
-  page.jobStatus = 'queued';
-  page.jobStage = 'na fila…';
-  page.jobError = null;
-  page.jobProgress = null;
-  updatePieceJobUI(page);
-
-  try{
-    const res = await fetch('/api/jobs', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({url, peca}),
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'falha ao criar job');
-    page.jobId = data.id;
-  } catch(err){
-    page.jobStatus = 'error';
-    page.jobError = err.message || String(err);
-    updatePieceJobUI(page);
-  }
-});
+$('fetchPieceBtn').addEventListener('click', ()=> triggerPieceSearch(activeIndex));
 
 async function pollJobs(){
   for(let i=0;i<pages.length;i++){
@@ -879,9 +983,10 @@ async function pollJobs(){
       render();
     }
   }
+  refreshPieceCardsStatus();
 }
 
-// ---------- busca de inspiração via pinterest-inspo (texto -> 8 fotos) ----------
+// ---------- busca de inspiração via pinterest-inspo (texto -> 16 fotos) ----------
 function updateInspoJobUI(page){
   const el = $('inspoJobStatus');
   const btn = $('fetchInspoBtn');
@@ -938,7 +1043,7 @@ function renderInspoGrid(page){
   });
 }
 
-// Clicar numa das 8 fotos escolhe ela como inspo 1 (primeiro clique) ou
+// Clicar numa das fotos escolhe ela como inspo 1 (primeiro clique) ou
 // inspo 2 (segundo clique). Clicar numa foto já escolhida desmarca ela.
 // Um 3º clique substitui a escolha mais antiga (troca a inspo 1).
 async function onInspoThumbClick(idx){
@@ -1044,9 +1149,9 @@ function drawBackground(params){
   if(bgImage){
     coverFit(ctx, bgImage, 0, 0, W, H);
   } else {
-    ctx.fillStyle = '#26221d';
+    ctx.fillStyle = '#1c1712';
     ctx.fillRect(0,0,W,H);
-    ctx.fillStyle = '#4a453c';
+    ctx.fillStyle = '#4a4238';
     ctx.font = '300 22px Poppins';
     ctx.textAlign='center';
     ctx.fillText('envie a foto de fundo', W/2, H/2);
@@ -1128,7 +1233,7 @@ function drawInspoSticker(cx, cy, angleDeg){
   roundRect(ctx, -w/2, -h/2, w, h, h/2);
   ctx.fill();
   ctx.shadowColor = 'transparent';
-  ctx.fillStyle = '#6c6c4a';
+  ctx.fillStyle = '#c9502f';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
   ctx.fillText(text, 0, 2);
@@ -1217,7 +1322,7 @@ function renderPage(page){
 
   const title = page.title.trim();
   if(title){
-    drawSpacedText(title, W/2, page.params.ty, page.params.tsize, '#6c6c4a', '#fdfbf5', page.params.tstroke, page.params.tspace);
+    drawSpacedText(title, W/2, page.params.ty, page.params.tsize, '#c9502f', '#fdfbf5', page.params.tstroke, page.params.tspace);
   }
 
   if(page.garment){
@@ -1244,15 +1349,13 @@ function renderPage(page){
 function render(){
   renderPage(pages[activeIndex]);
   updateStatus();
-  updateDropAwaitingState();
+  refreshPieceCardsStatus();
 }
 
 // ---------- arrastar elementos direto no canvas (além dos sliders) ----------
 // Os sliders continuam existindo e funcionando — arrastar só é outro jeito
 // de mudar os mesmos parâmetros (params.gx/gy, p1x/p1y, etc.), sincronizado
 // nos dois sentidos.
-const P1_SIZE = [410,450], P2_SIZE = [410,450];
-
 function measureSpacedTextWidth(text, fontPx, spacing){
   ctx.font = `italic ${fontPx}px "Times New Roman", Georgia, serif`;
   const widths = [...text].map(ch => ctx.measureText(ch).width);
@@ -1392,21 +1495,18 @@ function updateStatus(){
   const s = $('status');
   const btn = $('downloadBtn');
   const btnAll = $('downloadAllBtn');
-  s.classList.remove('hint');
-  if(pickedIndex !== null){
-    s.textContent = 'foto selecionada — clique num quadro pra substituir (ajuste manual)';
-    s.classList.add('hint');
-  } else if(bgImage){
+  s.classList.remove('hint','err');
+  if(bgImage){
     btn.disabled = false;
     btnAll.disabled = false;
     s.textContent = `${pages.length} página(s) — post pronto, ajuste e baixe quando quiser`;
     s.classList.add('ok');
-    return;
   } else {
-    s.textContent = 'selecione todas as fotos de uma vez, na ordem certa, pra elas se encaixarem sozinhas';
+    s.classList.remove('ok');
+    s.textContent = 'comece adicionando a foto de fundo';
+    btn.disabled = true;
+    btnAll.disabled = true;
   }
-  btn.disabled = !bgImage;
-  btnAll.disabled = !bgImage;
 }
 
 // ---------- downloads ----------
@@ -1447,9 +1547,9 @@ $('downloadAllBtn').addEventListener('click', async ()=>{
 });
 
 // ---------- inicialização ----------
-buildLayoutTabs();
+refreshBgSlot();
 pages.push(newPage('s1'));
-buildPageTabs();
+buildPieceCards();
 $('addPageBtn').addEventListener('click', addPage);
 setActive(0);
 </script>
