@@ -197,9 +197,9 @@ def create_inspo_job():
     data = request.get_json(force=True, silent=True) or {}
     query = (data.get("query") or "").strip()
     try:
-        n = int(data.get("n") or 8)
+        n = int(data.get("n") or 16)
     except (TypeError, ValueError):
-        n = 8
+        n = 16
 
     if not query:
         return jsonify({"error": "campo 'query' é obrigatório"}), 400

@@ -131,13 +131,6 @@ body{
 }
 .field input[type=text]:focus{ border-color:var(--olive); }
 .field input[type=text]::placeholder{ color:#5c5850; }
-.field select{
-  width:100%; background:#161310; border:1px solid var(--panel-border); color:var(--cream);
-  font-family:'Poppins',sans-serif; font-weight:300; font-size:13.5px;
-  padding:10px 12px; border-radius:3px; outline:none; transition:border-color .15s ease;
-  appearance:none; -webkit-appearance:none;
-}
-.field select:focus{ border-color:var(--olive); }
 
 .checkline{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--cream-dim); margin-top:8px; }
 .checkline input{ accent-color:var(--olive); }
@@ -208,38 +201,6 @@ input[type=range]::-webkit-slider-thumb{
 .status{ font-size:10.5px; color:var(--cream-dim); margin-top:10px; min-height:14px; letter-spacing:.3px; }
 .status.ok{ color:var(--ok); }
 .status.hint{ color:var(--olive); }
-.status.err{ color:#d16a52; }
-
-.progress-wrap{ margin-top:10px; }
-.progress-bar{
-  width:100%; height:6px; background:#161310; border:1px solid var(--panel-border);
-  border-radius:4px; overflow:hidden;
-}
-.progress-fill{
-  height:100%; width:0%; background:var(--olive);
-  transition:width .4s ease;
-}
-.progress-label{
-  font-size:10.5px; color:var(--cream-dim); margin-top:6px; letter-spacing:.3px;
-  display:flex; justify-content:space-between; gap:8px;
-}
-.progress-label .eta{ color:var(--olive); white-space:nowrap; }
-
-.inspo-grid{
-  display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:12px;
-}
-.inspo-item{
-  position:relative; aspect-ratio:1/1; border-radius:3px; overflow:hidden;
-  border:2px solid transparent; cursor:pointer; transition:border-color .15s ease, transform .1s ease;
-}
-.inspo-item:hover{ transform:translateY(-1px); }
-.inspo-item img{ width:100%; height:100%; object-fit:cover; display:block; }
-.inspo-item.picked{ border-color:var(--olive); box-shadow:0 0 0 1px var(--olive); }
-.inspo-item .badge{
-  position:absolute; top:3px; right:3px; width:17px; height:17px; border-radius:50%;
-  background:var(--olive-deep); color:var(--cream); font-size:9.5px; font-weight:600;
-  display:flex; align-items:center; justify-content:center;
-}
 
 /* stage */
 .stage{
@@ -303,63 +264,21 @@ canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:2
 
     <div class="section">
       <div class="section-label">Inspirações (desta página)</div>
-
-      <div class="field">
-        <label>Buscar no Pinterest</label>
-        <input type="text" id="inspoQueryText" placeholder="ex: vestido animal print verão">
-      </div>
-      <button class="btn btn-secondary" id="fetchInspoBtn" type="button" style="margin-top:2px;">buscar 8 inspos</button>
-      <div class="status" id="inspoJobStatus"></div>
-
-      <div class="inspo-grid" id="inspoResultsGrid" style="display:none;"></div>
-      <div class="tray-hint" id="inspoPickHint" style="display:none;">clique em 2 fotos pra usar como inspo 1 e inspo 2</div>
-
-      <div class="upload-grid" style="margin-top:14px;">
+      <div class="upload-grid">
         <div class="drop" id="drop-insp1" data-slot="insp1">
-          <span class="plus">+</span><span class="hint">ou envie inspo 1 manualmente</span>
+          <span class="plus">+</span><span class="hint">inspo 1</span>
         </div>
         <div class="drop" id="drop-insp2" data-slot="insp2">
-          <span class="plus">+</span><span class="hint">ou envie inspo 2 manualmente</span>
+          <span class="plus">+</span><span class="hint">inspo 2</span>
         </div>
       </div>
     </div>
 
     <div class="section">
       <div class="section-label">Peça (desta página)</div>
-
-      <div class="field">
-        <label>Link da Shein</label>
-        <input type="text" id="sheinUrlText" placeholder="cole o link do produto aqui">
-      </div>
-      <div class="field">
-        <label>Tipo de peça (pro garment-reconstructor)</label>
-        <select id="pecaSelect">
-          <option value="">auto (detectar sozinho)</option>
-          <option value="vestido">vestido</option>
-          <option value="blusa">blusa</option>
-          <option value="saia">saia</option>
-          <option value="calca">calça</option>
-          <option value="short">short</option>
-          <option value="cinto">cinto</option>
-          <option value="sapato">sapato</option>
-          <option value="bolsa">bolsa</option>
-          <option value="lenco">lenço</option>
-          <option value="chapeu">chapéu</option>
-        </select>
-      </div>
-      <button class="btn btn-secondary" id="fetchPieceBtn" type="button" style="margin-top:2px;">buscar peça na shein</button>
-      <div class="status" id="pieceJobStatus"></div>
-      <div class="progress-wrap" id="pieceProgressWrap" style="display:none;">
-        <div class="progress-bar"><div class="progress-fill" id="pieceProgressFill"></div></div>
-        <div class="progress-label">
-          <span id="pieceProgressStep"></span>
-          <span class="eta" id="pieceProgressEta"></span>
-        </div>
-      </div>
-
-      <div class="upload-grid single" style="margin-top:14px;">
+      <div class="upload-grid single">
         <div class="drop" id="drop-garment" data-slot="garment">
-          <span class="plus">+</span><span class="hint">ou envie a foto da peça manualmente</span>
+          <span class="plus">+</span><span class="hint">foto da peça</span>
         </div>
       </div>
       <label class="checkline">
@@ -419,8 +338,8 @@ canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:2
       <input type="range" id="gx" min="0" max="1080" value="90">
       <div class="slider-row"><label>posição y</label><span class="val" id="v-gy">720</span></div>
       <input type="range" id="gy" min="0" max="1350" value="720">
-      <div class="slider-row"><label>tamanho</label><span class="val" id="v-gsize">900</span></div>
-      <input type="range" id="gsize" min="200" max="1080" value="900">
+      <div class="slider-row"><label>tamanho</label><span class="val" id="v-gsize">520</span></div>
+      <input type="range" id="gsize" min="200" max="900" value="520">
       <div class="slider-row"><label>borda</label><span class="val" id="v-gborder">14</span></div>
       <input type="range" id="gborder" min="0" max="40" value="14">
       <div class="slider-row"><label>limiar remoção do branco</label><span class="val" id="v-wthresh">235</span></div>
@@ -429,8 +348,8 @@ canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:2
       <div class="group-title">SKU</div>
       <div class="slider-row"><label>posição x</label><span class="val" id="v-skux">37</span></div>
       <input type="range" id="skux" min="0" max="1080" value="37">
-      <div class="slider-row"><label>posição y</label><span class="val" id="v-skuy">70</span></div>
-      <input type="range" id="skuy" min="0" max="1350" value="70">
+      <div class="slider-row"><label>posição y</label><span class="val" id="v-skuy">1261</span></div>
+      <input type="range" id="skuy" min="0" max="1350" value="1261">
       <div class="slider-row"><label>opacidade</label><span class="val" id="v-skuop">43</span></div>
       <input type="range" id="skuop" min="5" max="100" value="43">
 
@@ -467,8 +386,8 @@ const LAYOUTS = {
     p2x:461, p2y:104, p2a:7,
     showInspo:true,
     ty:442, tsize:70, tspace:-4, tstroke:0,
-    gx:90, gy:400, gsize:900, gborder:14, wthresh:235,
-    skux:37, skuy:70, skuop:43,
+    gx:90, gy:720, gsize:520, gborder:14, wthresh:235,
+    skux:37, skuy:1261, skuop:43,
     otop:25, obot:60,
   },
   s2: {
@@ -476,8 +395,8 @@ const LAYOUTS = {
     p2x:84, p2y:520, p2a:7,
     showInspo:true,
     ty:442, tsize:70, tspace:-4, tstroke:0,
-    gx:90, gy:400, gsize:900, gborder:14, wthresh:235,
-    skux:37, skuy:70, skuop:43,
+    gx:515, gy:54, gsize:520, gborder:14, wthresh:235,
+    skux:796, skuy:1261, skuop:43,
     otop:25, obot:60,
   },
 };
@@ -501,12 +420,6 @@ function newPage(layoutKey){
     layout: layoutKey,
     params: {...LAYOUTS[layoutKey]},
     garmentCache: {threshold:null, canvas:null, srcImg:null},
-    // busca automática via Shein (pipeline)
-    sheinUrl:'', peca:'',
-    jobId:null, jobStatus:null, jobStage:'', jobError:null, jobProgress:null,
-    // busca automática de inspo (pinterest-inspo)
-    inspoQuery:'', inspoResults:[], inspoPickedIdx:[],
-    inspoJobId:null, inspoJobStatus:null, inspoJobStage:'', inspoJobError:null,
   };
 }
 
@@ -531,12 +444,6 @@ function setActive(i){
 
   $('titleText').value = page.title;
   $('skuText').value = page.sku;
-  $('sheinUrlText').value = page.sheinUrl;
-  $('pecaSelect').value = page.peca;
-  updatePieceJobUI(page);
-  $('inspoQueryText').value = page.inspoQuery;
-  updateInspoJobUI(page);
-  renderInspoGrid(page);
 
   PARAM_KEYS.forEach(key=>{
     if(key === 'showInspo'){
@@ -550,9 +457,9 @@ function setActive(i){
     if(v) v.textContent = page.params[key];
   });
 
-  refreshSlot('drop-insp1', page.insp1, 'ou envie inspo 1 manualmente');
-  refreshSlot('drop-insp2', page.insp2, 'ou envie inspo 2 manualmente');
-  refreshSlot('drop-garment', page.garment, 'ou envie a foto da peça manualmente');
+  refreshSlot('drop-insp1', page.insp1, 'inspo 1');
+  refreshSlot('drop-insp2', page.insp2, 'inspo 2');
+  refreshSlot('drop-garment', page.garment, 'foto da peça');
 
   document.querySelectorAll('.page-chip').forEach((el,idx)=> el.classList.toggle('active', idx===i));
   document.querySelectorAll('.layout-tab').forEach(el=> el.classList.toggle('active', el.dataset.layout===page.layout));
@@ -743,292 +650,6 @@ $('showInspo').addEventListener('change', ()=>{
 $('removeWhite').addEventListener('change', render);
 $('titleText').addEventListener('input', ()=>{ pages[activeIndex].title = $('titleText').value; render(); });
 $('skuText').addEventListener('input', ()=>{ pages[activeIndex].sku = $('skuText').value; render(); });
-$('sheinUrlText').addEventListener('input', ()=>{ pages[activeIndex].sheinUrl = $('sheinUrlText').value; });
-$('pecaSelect').addEventListener('change', ()=>{ pages[activeIndex].peca = $('pecaSelect').value; });
-
-// ---------- busca automática da peça via pipeline (link Shein -> foto + sku) ----------
-function formatEta(seconds){
-  if(seconds == null || isNaN(seconds)) return '';
-  if(seconds < 60) return `~${Math.max(1, Math.round(seconds))}s restantes`;
-  const min = Math.round(seconds/60);
-  return `~${min} min restante${min===1?'':'s'}`;
-}
-
-function updatePieceJobUI(page){
-  const el = $('pieceJobStatus');
-  const btn = $('fetchPieceBtn');
-  const progWrap = $('pieceProgressWrap');
-  el.classList.remove('ok','hint','err');
-
-  if(!page.jobStatus){
-    el.textContent = '';
-    btn.disabled = false;
-    btn.textContent = 'buscar peça na shein';
-  } else if(page.jobStatus === 'queued'){
-    el.textContent = 'na fila… (você pode seguir editando outras páginas)';
-    el.classList.add('hint');
-    btn.disabled = true;
-    btn.textContent = 'na fila…';
-  } else if(page.jobStatus === 'running'){
-    el.textContent = page.jobStage || 'processando…';
-    el.classList.add('hint');
-    btn.disabled = true;
-    btn.textContent = 'processando…';
-  } else if(page.jobStatus === 'done'){
-    el.textContent = 'pronto ✓ peça e SKU preenchidos abaixo';
-    el.classList.add('ok');
-    btn.disabled = false;
-    btn.textContent = 'buscar de novo';
-  } else if(page.jobStatus === 'error'){
-    el.textContent = 'erro: ' + (page.jobError || 'desconhecido');
-    el.classList.add('err');
-    btn.disabled = false;
-    btn.textContent = 'tentar de novo';
-  }
-
-  // barra de progresso — só aparece durante a geração da imagem (mflux),
-  // que é a etapa que tem step/total conhecidos.
-  const p = page.jobProgress;
-  if(page.jobStatus === 'running' && p && p.total_steps){
-    progWrap.style.display = 'block';
-    $('pieceProgressFill').style.width = (p.percent || 0) + '%';
-    $('pieceProgressStep').textContent = `gerando imagem — passo ${p.current_step}/${p.total_steps}`;
-    $('pieceProgressEta').textContent = formatEta(p.eta_seconds);
-  } else {
-    progWrap.style.display = 'none';
-  }
-}
-
-function loadImageFromDataUrl(dataUrl){
-  return new Promise((resolve, reject)=>{
-    const img = new Image();
-    img.onload = ()=> resolve(img);
-    img.onerror = reject;
-    img.src = dataUrl;
-  });
-}
-
-$('fetchPieceBtn').addEventListener('click', async ()=>{
-  const page = pages[activeIndex];
-  const url = $('sheinUrlText').value.trim();
-  const peca = $('pecaSelect').value;
-
-  if(!url){
-    const s = $('pieceJobStatus');
-    s.textContent = 'cole o link do produto da Shein primeiro';
-    s.classList.add('err');
-    return;
-  }
-
-  page.sheinUrl = url;
-  page.peca = peca;
-  page.jobStatus = 'queued';
-  page.jobStage = 'na fila…';
-  page.jobError = null;
-  page.jobProgress = null;
-  updatePieceJobUI(page);
-
-  try{
-    const res = await fetch('/api/jobs', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({url, peca}),
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'falha ao criar job');
-    page.jobId = data.id;
-  } catch(err){
-    page.jobStatus = 'error';
-    page.jobError = err.message || String(err);
-    updatePieceJobUI(page);
-  }
-});
-
-async function pollJobs(){
-  for(let i=0;i<pages.length;i++){
-    const page = pages[i];
-    if(!page.jobId) continue;
-    if(page.jobStatus !== 'queued' && page.jobStatus !== 'running') continue;
-
-    try{
-      const res = await fetch(`/api/jobs/${page.jobId}`);
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || 'job não encontrado');
-
-      page.jobStatus = data.status;
-      page.jobStage = data.stage;
-      page.jobProgress = data.progress || null;
-
-      if(data.status === 'done' && data.result){
-        const img = await loadImageFromDataUrl(data.result.image_data_url);
-        page.garment = img;
-        page.garmentCache = {threshold:null, canvas:null, srcImg:null};
-        page.sku = data.result.sku || data.result.product_id || page.sku;
-      } else if(data.status === 'error'){
-        page.jobError = data.error;
-      }
-    } catch(err){
-      page.jobStatus = 'error';
-      page.jobError = err.message || String(err);
-    }
-
-    if(i === activeIndex){
-      refreshSlot('drop-garment', page.garment, 'ou envie a foto da peça manualmente');
-      $('skuText').value = page.sku;
-      updatePieceJobUI(page);
-      render();
-    }
-  }
-}
-
-// ---------- busca de inspiração via pinterest-inspo (texto -> 8 fotos) ----------
-function updateInspoJobUI(page){
-  const el = $('inspoJobStatus');
-  const btn = $('fetchInspoBtn');
-  el.classList.remove('ok','hint','err');
-
-  if(!page.inspoJobStatus){
-    el.textContent = '';
-    btn.disabled = false;
-    btn.textContent = 'buscar 16 inspos';
-  } else if(page.inspoJobStatus === 'queued'){
-    el.textContent = 'na fila…';
-    el.classList.add('hint');
-    btn.disabled = true;
-    btn.textContent = 'na fila…';
-  } else if(page.inspoJobStatus === 'running'){
-    el.textContent = page.inspoJobStage || 'buscando…';
-    el.classList.add('hint');
-    btn.disabled = true;
-    btn.textContent = 'buscando…';
-  } else if(page.inspoJobStatus === 'done'){
-    el.textContent = `pronto ✓ ${page.inspoResults.length} fotos — clique em 2 pra usar`;
-    el.classList.add('ok');
-    btn.disabled = false;
-    btn.textContent = 'buscar de novo';
-  } else if(page.inspoJobStatus === 'error'){
-    el.textContent = 'erro: ' + (page.inspoJobError || 'desconhecido');
-    el.classList.add('err');
-    btn.disabled = false;
-    btn.textContent = 'tentar de novo';
-  }
-}
-
-function renderInspoGrid(page){
-  const grid = $('inspoResultsGrid');
-  const hint = $('inspoPickHint');
-
-  if(!page.inspoResults || page.inspoResults.length === 0){
-    grid.style.display = 'none';
-    hint.style.display = 'none';
-    grid.innerHTML = '';
-    return;
-  }
-
-  grid.style.display = 'grid';
-  hint.style.display = 'block';
-  grid.innerHTML = '';
-  page.inspoResults.forEach((src, i)=>{
-    const pos = page.inspoPickedIdx.indexOf(i);
-    const el = document.createElement('div');
-    el.className = 'inspo-item' + (pos !== -1 ? ' picked' : '');
-    el.innerHTML = `<img src="${src}">` + (pos !== -1 ? `<div class="badge">${pos+1}</div>` : '');
-    el.addEventListener('click', ()=> onInspoThumbClick(i));
-    grid.appendChild(el);
-  });
-}
-
-// Clicar numa das 8 fotos escolhe ela como inspo 1 (primeiro clique) ou
-// inspo 2 (segundo clique). Clicar numa foto já escolhida desmarca ela.
-// Um 3º clique substitui a escolha mais antiga (troca a inspo 1).
-async function onInspoThumbClick(idx){
-  const page = pages[activeIndex];
-  const pos = page.inspoPickedIdx.indexOf(idx);
-
-  if(pos !== -1){
-    page.inspoPickedIdx.splice(pos, 1);
-  } else {
-    if(page.inspoPickedIdx.length >= 2) page.inspoPickedIdx.shift();
-    page.inspoPickedIdx.push(idx);
-  }
-
-  const [idx0, idx1] = page.inspoPickedIdx;
-  page.insp1 = (idx0 != null) ? await loadImageFromDataUrl(page.inspoResults[idx0]) : null;
-  page.insp2 = (idx1 != null) ? await loadImageFromDataUrl(page.inspoResults[idx1]) : null;
-
-  renderInspoGrid(page);
-  refreshSlot('drop-insp1', page.insp1, 'ou envie inspo 1 manualmente');
-  refreshSlot('drop-insp2', page.insp2, 'ou envie inspo 2 manualmente');
-  render();
-}
-
-$('fetchInspoBtn').addEventListener('click', async ()=>{
-  const page = pages[activeIndex];
-  const query = $('inspoQueryText').value.trim();
-
-  if(!query){
-    const s = $('inspoJobStatus');
-    s.textContent = 'escreva o que você quer pesquisar primeiro';
-    s.classList.add('err');
-    return;
-  }
-
-  page.inspoQuery = query;
-  page.inspoJobStatus = 'queued';
-  page.inspoJobStage = 'na fila…';
-  page.inspoJobError = null;
-  updateInspoJobUI(page);
-
-  try{
-    const res = await fetch('/api/inspo-jobs', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({query, n:16}),
-    });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'falha ao criar busca');
-    page.inspoJobId = data.id;
-  } catch(err){
-    page.inspoJobStatus = 'error';
-    page.inspoJobError = err.message || String(err);
-    updateInspoJobUI(page);
-  }
-});
-
-async function pollInspoJobs(){
-  for(let i=0;i<pages.length;i++){
-    const page = pages[i];
-    if(!page.inspoJobId) continue;
-    if(page.inspoJobStatus !== 'queued' && page.inspoJobStatus !== 'running') continue;
-
-    try{
-      const res = await fetch(`/api/inspo-jobs/${page.inspoJobId}`);
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || 'job não encontrado');
-
-      page.inspoJobStatus = data.status;
-      page.inspoJobStage = data.stage;
-
-      if(data.status === 'done' && data.result){
-        page.inspoResults = data.result.images;
-        page.inspoPickedIdx = [];
-      } else if(data.status === 'error'){
-        page.inspoJobError = data.error;
-      }
-    } catch(err){
-      page.inspoJobStatus = 'error';
-      page.inspoJobError = err.message || String(err);
-    }
-
-    if(i === activeIndex){
-      updateInspoJobUI(page);
-      renderInspoGrid(page);
-    }
-  }
-}
-
-setInterval(pollJobs, 3000);
-setInterval(pollInspoJobs, 3000);
 
 // ---------- desenho ----------
 function coverFit(ctx, img, x, y, w, h){
@@ -1246,147 +867,6 @@ function render(){
   updateStatus();
   updateDropAwaitingState();
 }
-
-// ---------- arrastar elementos direto no canvas (além dos sliders) ----------
-// Os sliders continuam existindo e funcionando — arrastar só é outro jeito
-// de mudar os mesmos parâmetros (params.gx/gy, p1x/p1y, etc.), sincronizado
-// nos dois sentidos.
-const P1_SIZE = [410,450], P2_SIZE = [410,450];
-
-function measureSpacedTextWidth(text, fontPx, spacing){
-  ctx.font = `italic ${fontPx}px "Times New Roman", Georgia, serif`;
-  const widths = [...text].map(ch => ctx.measureText(ch).width);
-  return widths.reduce((a,b)=>a+b,0) + spacing*Math.max(0, text.length-1);
-}
-
-function getGarmentDrawSize(page){
-  if(!page.garment) return null;
-  const removeWhite = $('removeWhite').checked;
-  let src = page.garment;
-  if(removeWhite && page.garmentCache.canvas && page.garmentCache.srcImg === page.garment){
-    src = page.garmentCache.canvas;
-  }
-  const maxSize = page.params.gsize;
-  const scale = Math.min(maxSize/src.width, maxSize/src.height);
-  return { w: src.width*scale, h: src.height*scale };
-}
-
-// Caixas delimitadoras (aproximadas, sem levar em conta rotação — suficiente
-// pra clicar e arrastar) de cada elemento arrastável, na página ativa.
-function getElementBounds(page){
-  const p = page.params;
-  const bounds = {};
-
-  const skuText = page.sku.trim();
-  if(skuText){
-    ctx.font = '300 34px Poppins';
-    const w = ctx.measureText('sku: ' + skuText).width;
-    bounds.sku = { x:p.skux, y:p.skuy-30, w, h:40 };
-  }
-
-  const gsz = getGarmentDrawSize(page);
-  if(gsz){
-    bounds.garment = { x:p.gx, y:p.gy, w:gsz.w, h:gsz.h };
-  }
-
-  const title = page.title.trim();
-  if(title){
-    const w = measureSpacedTextWidth(title, p.tsize, p.tspace);
-    bounds.title = { x: W/2 - w/2, y: p.ty - p.tsize*0.85, w, h: p.tsize*1.05 };
-  }
-
-  bounds.p1 = { x:p.p1x, y:p.p1y, w:P1_SIZE[0], h:P1_SIZE[1] };
-  bounds.p2 = { x:p.p2x, y:p.p2y, w:P2_SIZE[0], h:P2_SIZE[1] };
-
-  return bounds;
-}
-
-// Ordem de teste = ordem inversa de desenho (o que está por cima é testado
-// primeiro), pra clicar no elemento que você realmente está vendo no topo.
-const HIT_ORDER = ['sku','garment','title','p1','p2'];
-
-const DRAG_PARAM_MAP = {
-  sku:     { x:'skux', y:'skuy' },
-  garment: { x:'gx',   y:'gy'   },
-  title:   { x:null,   y:'ty'   },
-  p1:      { x:'p1x',  y:'p1y'  },
-  p2:      { x:'p2x',  y:'p2y'  },
-};
-
-function hitTest(page, cx, cy){
-  const bounds = getElementBounds(page);
-  for(const key of HIT_ORDER){
-    const b = bounds[key];
-    if(!b) continue;
-    if(cx>=b.x && cx<=b.x+b.w && cy>=b.y && cy<=b.y+b.h){
-      return { key, bounds:b };
-    }
-  }
-  return null;
-}
-
-function clientToCanvasPoint(evt){
-  const rect = canvas.getBoundingClientRect();
-  // guarda contra layout ainda não calculado (rect 0x0) — evita Infinity/NaN
-  const scaleX = rect.width  > 0 ? canvas.width  / rect.width  : 1;
-  const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
-  return {
-    x: (evt.clientX - rect.left) * scaleX,
-    y: (evt.clientY - rect.top) * scaleY,
-  };
-}
-
-function applyDragPosition(page, key, x, y){
-  const map = DRAG_PARAM_MAP[key];
-  if(!map) return;
-  ['x','y'].forEach(axis=>{
-    const paramKey = map[axis];
-    if(!paramKey) return;
-    const el = $(paramKey);
-    if(!el) return;
-    const min = Number(el.min), max = Number(el.max);
-    const raw = axis === 'x' ? x : y;
-    const v = Math.round(Math.min(max, Math.max(min, raw)));
-    page.params[paramKey] = v;
-    el.value = v;
-    const label = $('v-'+paramKey);
-    if(label) label.textContent = v;
-  });
-}
-
-let dragState = null; // { key, offsetX, offsetY }
-
-canvas.addEventListener('mousedown', (e)=>{
-  const page = pages[activeIndex];
-  const pt = clientToCanvasPoint(e);
-  const hit = hitTest(page, pt.x, pt.y);
-  if(!hit) return;
-  dragState = { key: hit.key, offsetX: pt.x - hit.bounds.x, offsetY: pt.y - hit.bounds.y };
-  canvas.style.cursor = 'grabbing';
-  e.preventDefault();
-});
-
-canvas.addEventListener('mousemove', (e)=>{
-  if(dragState) return; // enquanto arrasta, o cursor já é 'grabbing'
-  const page = pages[activeIndex];
-  const pt = clientToCanvasPoint(e);
-  const hit = hitTest(page, pt.x, pt.y);
-  canvas.style.cursor = hit ? 'grab' : 'default';
-});
-
-window.addEventListener('mousemove', (e)=>{
-  if(!dragState) return;
-  const page = pages[activeIndex];
-  const pt = clientToCanvasPoint(e);
-  applyDragPosition(page, dragState.key, pt.x - dragState.offsetX, pt.y - dragState.offsetY);
-  render();
-});
-
-window.addEventListener('mouseup', ()=>{
-  if(!dragState) return;
-  dragState = null;
-  canvas.style.cursor = 'default';
-});
 
 function updateStatus(){
   const s = $('status');
