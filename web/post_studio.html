@@ -52,7 +52,7 @@ body{
   flex-shrink:0;
   background:var(--panel);
   border-right:1px solid var(--border-soft);
-  padding:30px 26px 130px;
+  padding:30px 26px 36px;
   overflow-y:auto;
   max-height:100vh;
   position:relative;
@@ -139,6 +139,16 @@ body{
 }
 .piece-url:focus{ border-color:var(--accent); }
 .piece-url::placeholder{ color:var(--cream-faint); }
+.inspo-search-row{ display:flex; gap:6px; }
+.inspo-query{
+  flex:1; min-width:0; background:#100d0a; border:1px solid var(--border); color:var(--cream);
+  font-family:'Poppins',sans-serif; font-weight:300; font-size:12.5px;
+  padding:9px 10px; border-radius:7px; outline:none; transition:border-color .15s ease;
+}
+.inspo-query:focus{ border-color:var(--accent); }
+.inspo-query::placeholder{ color:var(--cream-faint); }
+.piece-inspo{ margin-top:11px; padding-top:11px; border-top:1px solid var(--border-soft); }
+.piece-inspo-label{ font-size:9.5px; letter-spacing:1.2px; text-transform:uppercase; color:var(--clay); margin-bottom:7px; }
 .piece-go{
   width:34px; flex-shrink:0; border:none; border-radius:7px; background:var(--accent); color:var(--ink);
   font-size:15px; cursor:pointer; transition:filter .15s ease, transform .1s ease;
@@ -303,10 +313,11 @@ input[type=range]{ width:100%; -webkit-appearance:none; height:2px; background:v
 input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--accent); cursor:pointer; margin-top:-5px; }
 .group-title{ font-size:9.5px; letter-spacing:1.4px; text-transform:uppercase; color:var(--clay); margin:15px 0 2px; }
 
-/* ---------- footer (sticky) ---------- */
+/* ---------- footer (no fluxo normal, não flutua sobre o conteúdo) ---------- */
 .panel-footer{
-  position:sticky; bottom:0; left:0; right:0; margin:26px -26px -130px; padding:16px 26px 22px;
-  background:linear-gradient(180deg, transparent, var(--panel) 22%);
+  margin-top:30px;
+  padding-top:22px;
+  border-top:1px solid var(--border-soft);
 }
 .btn{
   width:100%; margin-top:8px; padding:14px; border:none; border-radius:10px;
@@ -417,15 +428,8 @@ canvas#post{ display:block; height:min(82vh, 860px); width:auto; border-radius:3
           </div>
 
           <div class="adv-group">
-            <div class="adv-group-title">Inspirações</div>
-            <div class="field">
-              <label>Buscar no Pinterest</label>
-              <input type="text" id="inspoQueryText" placeholder="ex: vestido animal print verão">
-            </div>
-            <button class="btn-mini" id="fetchInspoBtn" type="button">buscar 16 inspos</button>
-            <div class="status" id="inspoJobStatus"></div>
-            <div class="inspo-grid" id="inspoResultsGrid" style="display:none;"></div>
-            <div class="tray-hint" id="inspoPickHint" style="display:none;">clique em 2 fotos pra usar como inspo 1 e inspo 2</div>
+            <div class="adv-group-title">Inspirações (upload manual)</div>
+            <div class="tray-hint">a busca no Pinterest já fica no cartão da peça, lá em cima — isso aqui é só pra substituir uma das duas por uma foto sua.</div>
             <div class="upload-grid">
               <div class="drop" id="drop-insp1">
                 <span class="plus">+</span><span class="hint">ou envie inspo 1 manualmente</span>
@@ -701,6 +705,15 @@ function createPieceCardEl(i){
     <div class="layout-row">
       ${Object.keys(LAYOUTS).map(k=>`<button type="button" class="layout-btn ${page.layout===k?'active':''}" data-layout="${k}">${buildSwatchHTML(k)}<span>${k.toUpperCase()}</span></button>`).join('')}
     </div>
+    <div class="piece-inspo">
+      <div class="piece-inspo-label">Inspirações — buscar no Pinterest</div>
+      <div class="inspo-search-row">
+        <input type="text" class="inspo-query" id="cardInspoQuery-${i}" placeholder="ex: vestido animal print verão" value="${(page.inspoQuery||'').replace(/"/g,'&quot;')}">
+        <button class="piece-go" id="cardInspoGo-${i}" type="button" title="buscar">→</button>
+      </div>
+      <div class="piece-status" id="cardInspoStatus-${i}">${inspoStatusText(page)}</div>
+      <div class="inspo-grid" id="cardInspoGrid-${i}" style="display:none;"></div>
+    </div>
     <button class="piece-adv-toggle" type="button">ajustar manualmente</button>
   `;
 
@@ -724,10 +737,17 @@ function createPieceCardEl(i){
     });
   });
 
+  const inspoInput = card.querySelector(`#cardInspoQuery-${i}`);
+  inspoInput.addEventListener('input', ()=>{ pages[i].inspoQuery = inspoInput.value; });
+  inspoInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); triggerInspoSearch(i); } });
+  card.querySelector(`#cardInspoGo-${i}`).addEventListener('click', (e)=>{ e.stopPropagation(); triggerInspoSearch(i); });
+  card.querySelector(`#cardInspoStatus-${i}`).addEventListener('click', (e)=> e.stopPropagation());
+
   card.querySelector('.piece-adv-toggle').addEventListener('click', (e)=>{ e.stopPropagation(); openAdvancedFor(i); });
   card.querySelector(`#cardThumb-${i}`).addEventListener('click', ()=> setActive(i));
   card.querySelector(`#cardStatus-${i}`).addEventListener('click', ()=> setActive(i));
 
+  renderInspoGridFor(i);
   return card;
 }
 
@@ -767,9 +787,6 @@ function setActive(i){
   $('skuText').value = page.sku;
   $('pecaSelect').value = page.peca;
   updatePieceJobUI(page);
-  $('inspoQueryText').value = page.inspoQuery;
-  updateInspoJobUI(page);
-  renderInspoGrid(page);
   $('advDrawerSummary').textContent = `ajustes manuais — ${page.name}`;
 
   PARAM_KEYS.forEach(key=>{
@@ -987,58 +1004,48 @@ async function pollJobs(){
 }
 
 // ---------- busca de inspiração via pinterest-inspo (texto -> 16 fotos) ----------
-function updateInspoJobUI(page){
-  const el = $('inspoJobStatus');
-  const btn = $('fetchInspoBtn');
-  el.classList.remove('ok','hint','err');
-
-  if(!page.inspoJobStatus){
-    el.textContent = '';
-    btn.disabled = false;
-    btn.textContent = 'buscar 16 inspos';
-  } else if(page.inspoJobStatus === 'queued'){
-    el.textContent = 'na fila…';
-    el.classList.add('hint');
-    btn.disabled = true;
-    btn.textContent = 'na fila…';
-  } else if(page.inspoJobStatus === 'running'){
-    el.textContent = page.inspoJobStage || 'buscando…';
-    el.classList.add('hint');
-    btn.disabled = true;
-    btn.textContent = 'buscando…';
-  } else if(page.inspoJobStatus === 'done'){
-    el.textContent = `pronto ✓ ${page.inspoResults.length} fotos — clique em 2 pra usar`;
-    el.classList.add('ok');
-    btn.disabled = false;
-    btn.textContent = 'buscar de novo';
-  } else if(page.inspoJobStatus === 'error'){
-    el.textContent = 'erro: ' + (page.inspoJobError || 'desconhecido');
-    el.classList.add('err');
-    btn.disabled = false;
-    btn.textContent = 'tentar de novo';
-  }
+// Vive dentro de cada cartão de peça (uma busca/seleção própria por página),
+// junto com o link e o layout — não fica escondida no avançado.
+function inspoStatusText(page){
+  if(page.inspoJobStatus === 'queued') return 'na fila…';
+  if(page.inspoJobStatus === 'running') return page.inspoJobStage || 'buscando…';
+  if(page.inspoJobStatus === 'error') return 'erro: ' + (page.inspoJobError || 'desconhecido');
+  if(page.inspoJobStatus === 'done') return `${page.inspoResults.length} fotos ✓ — clique em 2 pra usar`;
+  return 'pesquise e escolha 2 fotos de inspiração';
 }
 
-function renderInspoGrid(page){
-  const grid = $('inspoResultsGrid');
-  const hint = $('inspoPickHint');
+function updateCardInspoUI(i){
+  const page = pages[i];
+  const status = document.getElementById(`cardInspoStatus-${i}`);
+  const go = document.getElementById(`cardInspoGo-${i}`);
+  if(!status) return;
+  status.textContent = inspoStatusText(page);
+  status.classList.remove('ok','hint','err');
+  const busy = page.inspoJobStatus === 'queued' || page.inspoJobStatus === 'running';
+  if(page.inspoJobStatus === 'error') status.classList.add('err');
+  else if(page.inspoJobStatus === 'done') status.classList.add('ok');
+  else if(busy) status.classList.add('hint');
+  if(go) go.disabled = busy;
+  renderInspoGridFor(i);
+}
 
+function renderInspoGridFor(i){
+  const page = pages[i];
+  const grid = document.getElementById(`cardInspoGrid-${i}`);
+  if(!grid) return;
   if(!page.inspoResults || page.inspoResults.length === 0){
     grid.style.display = 'none';
-    hint.style.display = 'none';
     grid.innerHTML = '';
     return;
   }
-
   grid.style.display = 'grid';
-  hint.style.display = 'block';
   grid.innerHTML = '';
-  page.inspoResults.forEach((src, i)=>{
-    const pos = page.inspoPickedIdx.indexOf(i);
+  page.inspoResults.forEach((src, idx)=>{
+    const pos = page.inspoPickedIdx.indexOf(idx);
     const el = document.createElement('div');
     el.className = 'inspo-item' + (pos !== -1 ? ' picked' : '');
     el.innerHTML = `<img src="${src}">` + (pos !== -1 ? `<div class="badge">${pos+1}</div>` : '');
-    el.addEventListener('click', ()=> onInspoThumbClick(i));
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); onInspoThumbClick(i, idx); });
     grid.appendChild(el);
   });
 }
@@ -1046,8 +1053,8 @@ function renderInspoGrid(page){
 // Clicar numa das fotos escolhe ela como inspo 1 (primeiro clique) ou
 // inspo 2 (segundo clique). Clicar numa foto já escolhida desmarca ela.
 // Um 3º clique substitui a escolha mais antiga (troca a inspo 1).
-async function onInspoThumbClick(idx){
-  const page = pages[activeIndex];
+async function onInspoThumbClick(i, idx){
+  const page = pages[i];
   const pos = page.inspoPickedIdx.indexOf(idx);
 
   if(pos !== -1){
@@ -1061,20 +1068,22 @@ async function onInspoThumbClick(idx){
   page.insp1 = (idx0 != null) ? await loadImageFromDataUrl(page.inspoResults[idx0]) : null;
   page.insp2 = (idx1 != null) ? await loadImageFromDataUrl(page.inspoResults[idx1]) : null;
 
-  renderInspoGrid(page);
-  refreshSlot('drop-insp1', page.insp1, 'ou envie inspo 1 manualmente');
-  refreshSlot('drop-insp2', page.insp2, 'ou envie inspo 2 manualmente');
-  render();
+  renderInspoGridFor(i);
+  if(i === activeIndex){
+    refreshSlot('drop-insp1', page.insp1, 'ou envie inspo 1 manualmente');
+    refreshSlot('drop-insp2', page.insp2, 'ou envie inspo 2 manualmente');
+    render();
+  }
 }
 
-$('fetchInspoBtn').addEventListener('click', async ()=>{
-  const page = pages[activeIndex];
-  const query = $('inspoQueryText').value.trim();
+async function triggerInspoSearch(i){
+  const page = pages[i];
+  const input = document.getElementById(`cardInspoQuery-${i}`);
+  const query = (input ? input.value : page.inspoQuery || '').trim();
 
   if(!query){
-    const s = $('inspoJobStatus');
-    s.textContent = 'escreva o que você quer pesquisar primeiro';
-    s.classList.add('err');
+    const status = document.getElementById(`cardInspoStatus-${i}`);
+    if(status){ status.textContent = 'escreva o que você quer pesquisar primeiro'; status.classList.add('err'); }
     return;
   }
 
@@ -1082,7 +1091,7 @@ $('fetchInspoBtn').addEventListener('click', async ()=>{
   page.inspoJobStatus = 'queued';
   page.inspoJobStage = 'na fila…';
   page.inspoJobError = null;
-  updateInspoJobUI(page);
+  updateCardInspoUI(i);
 
   try{
     const res = await fetch('/api/inspo-jobs', {
@@ -1096,9 +1105,9 @@ $('fetchInspoBtn').addEventListener('click', async ()=>{
   } catch(err){
     page.inspoJobStatus = 'error';
     page.inspoJobError = err.message || String(err);
-    updateInspoJobUI(page);
   }
-});
+  updateCardInspoUI(i);
+}
 
 async function pollInspoJobs(){
   for(let i=0;i<pages.length;i++){
@@ -1125,9 +1134,11 @@ async function pollInspoJobs(){
       page.inspoJobError = err.message || String(err);
     }
 
+    updateCardInspoUI(i);
     if(i === activeIndex){
-      updateInspoJobUI(page);
-      renderInspoGrid(page);
+      refreshSlot('drop-insp1', page.insp1, 'ou envie inspo 1 manualmente');
+      refreshSlot('drop-insp2', page.insp2, 'ou envie inspo 2 manualmente');
+      render();
     }
   }
 }
